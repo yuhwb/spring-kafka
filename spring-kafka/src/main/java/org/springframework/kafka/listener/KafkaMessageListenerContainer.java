@@ -2561,7 +2561,7 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 
 		private boolean checkImmediatePause(Iterator<ConsumerRecord<K, V>> iterator) {
 			if (isPaused() && this.pauseImmediate) {
-				Map<TopicPartition, List<ConsumerRecord<K, V>>> remaining = new HashMap<>();
+				Map<TopicPartition, List<ConsumerRecord<K, V>>> remaining = new LinkedHashMap<>();
 				while (iterator.hasNext()) {
 					ConsumerRecord<K, V> next = iterator.next();
 					remaining.computeIfAbsent(new TopicPartition(next.topic(), next.partition()),
@@ -3437,6 +3437,7 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 			public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
 				try {
 					this.revoked.addAll(partitions);
+					removeRevocationsFromPending(partitions);
 					if (this.consumerAwareListener != null) {
 						this.consumerAwareListener.onPartitionsRevokedBeforeCommit(ListenerConsumer.this.consumer,
 								partitions);
@@ -3482,6 +3483,23 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 				}
 			}
 
+			private void removeRevocationsFromPending(Collection<TopicPartition> partitions) {
+				ConsumerRecords<K, V> remaining = ListenerConsumer.this.remainingRecords;
+				if (remaining != null && !partitions.isEmpty()) {
+					Set<TopicPartition> remainingParts = new LinkedHashSet<>(remaining.partitions());
+					remainingParts.removeAll(partitions);
+					if (!remainingParts.isEmpty()) {
+						Map<TopicPartition, List<ConsumerRecord<K, V>>> trimmed = new LinkedHashMap<>();
+						remainingParts.forEach(part -> trimmed.computeIfAbsent(part, tp -> remaining.records(tp)));
+						ListenerConsumer.this.remainingRecords = new ConsumerRecords<>(trimmed);
+					}
+					else {
+						ListenerConsumer.this.remainingRecords = null;
+					}
+					ListenerConsumer.this.logger.debug(() -> "Removed " + partitions + " from remaining records");
+				}
+			}
+
 			@Override
 			public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
 				repauseIfNeeded(partitions);
@@ -3513,7 +3531,7 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 			}
 
 			private void repauseIfNeeded(Collection<TopicPartition> partitions) {
-				if (isPaused()) {
+				if (isPaused() || ListenerConsumer.this.remainingRecords != null && !partitions.isEmpty()) {
 					ListenerConsumer.this.consumer.pause(partitions);
 					ListenerConsumer.this.consumerPaused = true;
 					ListenerConsumer.this.logger.warn("Paused consumer resumed by Kafka due to rebalance; "
