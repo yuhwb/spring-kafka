@@ -73,6 +73,7 @@ import org.springframework.kafka.test.condition.EmbeddedKafkaCondition;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.kafka.transaction.KafkaTransactionManager;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -388,7 +389,7 @@ public class KafkaTemplateTransactionTests {
 
 			@SuppressWarnings({ "rawtypes", "unchecked" })
 			@Override
-			public Producer<String, String> createProducer(String txIdPrefixArg) {
+			public Producer<String, String> createProducer(@Nullable String txIdPrefixArg) {
 				CloseSafeProducer<String, String> closeSafeProducer = new CloseSafeProducer<>(producer,
 						(prod, timeout) -> {
 							prod.closeDelegate(timeout, Collections.emptyList());
@@ -424,7 +425,7 @@ public class KafkaTemplateTransactionTests {
 
 			@SuppressWarnings("unchecked")
 			@Override
-			public Producer<String, String> createProducer(String txIdPrefixArg) {
+			public Producer<String, String> createProducer(@Nullable String txIdPrefixArg) {
 				BlockingQueue<CloseSafeProducer<String, String>> cache = new LinkedBlockingDeque<>(1);
 				try {
 					cache.put(new CloseSafeProducer<>(mock(Producer.class), this::removeProducer,
