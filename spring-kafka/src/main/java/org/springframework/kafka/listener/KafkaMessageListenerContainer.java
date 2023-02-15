@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -122,6 +123,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
@@ -1977,38 +1979,37 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 			}
 		}
 
-		@SuppressWarnings(DEPRECATION)
-		private synchronized void ackInOrder(ConsumerRecord<K, V> record) {
-			TopicPartition part = new TopicPartition(record.topic(), record.partition());
+		private synchronized void ackInOrder(ConsumerRecord<K, V> cRecord) {
+			TopicPartition part = new TopicPartition(cRecord.topic(), cRecord.partition());
 			List<Long> offs = this.offsetsInThisBatch.get(part);
-			List<ConsumerRecord<K, V>> deferred = this.deferredOffsets.get(part);
-			if (offs.size() > 0) {
-				if (offs.get(0) == record.offset()) {
+			if (!ObjectUtils.isEmpty(offs)) {
+				List<ConsumerRecord<K, V>> deferred = this.deferredOffsets.get(part);
+				if (offs.get(0) == cRecord.offset()) {
 					offs.remove(0);
-					ConsumerRecord<K, V> recordToAck = record;
-					if (deferred.size() > 0) {
-						Collections.sort(deferred, (a, b) -> Long.compare(a.offset(), b.offset()));
-						while (deferred.size() > 0 && deferred.get(0).offset() == recordToAck.offset() + 1) {
+					ConsumerRecord<K, V> recordToAck = cRecord;
+					if (!deferred.isEmpty()) {
+						deferred.sort(Comparator.comparingLong(ConsumerRecord::offset));
+						while (!ObjectUtils.isEmpty(deferred) && deferred.get(0).offset() == recordToAck.offset() + 1) {
 							recordToAck = deferred.remove(0);
 							offs.remove(0);
 						}
 					}
 					processAck(recordToAck);
-					if (offs.size() == 0) {
+					if (offs.isEmpty()) {
 						this.deferredOffsets.remove(part);
 						this.offsetsInThisBatch.remove(part);
 					}
 				}
-				else if (record.offset() < offs.get(0)) {
+				else if (cRecord.offset() < offs.get(0)) {
 					throw new IllegalStateException("First remaining offset for this batch is " + offs.get(0)
-							+ "; you are acknowledging a stale record: " + ListenerUtils.recordToString(record));
+							+ "; you are acknowledging a stale record: " + KafkaUtils.format(cRecord));
 				}
 				else {
-					deferred.add(record);
+					deferred.add(cRecord);
 				}
 			}
 			else {
-				throw new IllegalStateException("Unexpected ack for " + ListenerUtils.recordToString(record)
+				throw new IllegalStateException("Unexpected ack for " + KafkaUtils.format(cRecord)
 						+ "; offsets list is empty");
 			}
 		}
@@ -3371,12 +3372,12 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 			@Override
 			public void acknowledge() {
 				Map<TopicPartition, List<Long>> offs = ListenerConsumer.this.offsetsInThisBatch;
-				Map<TopicPartition, List<ConsumerRecord<K, V>>> deferred = ListenerConsumer.this.deferredOffsets;
 				if (!this.acked) {
-					for (ConsumerRecord<K, V> record : getHighestOffsetRecords(this.records)) {
+					for (ConsumerRecord<K, V> cRecord : getHighestOffsetRecords(this.records)) {
 						if (offs != null) {
-							offs.remove(new TopicPartition(record.topic(), record.partition()));
-							deferred.remove(new TopicPartition(record.topic(), record.partition()));
+							TopicPartition partitionToRemove = new TopicPartition(cRecord.topic(), cRecord.partition());
+							offs.remove(partitionToRemove);
+							ListenerConsumer.this.deferredOffsets.remove(partitionToRemove);
 						}
 					}
 					processAcks(this.records);
@@ -3435,50 +3436,47 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 
 			@Override
 			public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-				try {
-					this.revoked.addAll(partitions);
-					removeRevocationsFromPending(partitions);
-					if (this.consumerAwareListener != null) {
-						this.consumerAwareListener.onPartitionsRevokedBeforeCommit(ListenerConsumer.this.consumer,
-								partitions);
-					}
-					else {
-						this.userListener.onPartitionsRevoked(partitions);
-					}
-					try {
-						// Wait until now to commit, in case the user listener added acks
-						checkRebalanceCommits();
-						commitPendingAcks();
-						fixTxOffsetsIfNeeded();
-					}
-					catch (Exception e) {
-						ListenerConsumer.this.logger.error(e, () -> "Fatal commit error after revocation "
-								+ partitions);
-					}
-					if (this.consumerAwareListener != null) {
-						this.consumerAwareListener.onPartitionsRevokedAfterCommit(ListenerConsumer.this.consumer,
-								partitions);
-					}
-					if (ListenerConsumer.this.consumerSeekAwareListener != null) {
-						ListenerConsumer.this.consumerSeekAwareListener.onPartitionsRevoked(partitions);
-					}
-					if (ListenerConsumer.this.assignedPartitions != null) {
-						ListenerConsumer.this.assignedPartitions.removeAll(partitions);
-					}
-					ListenerConsumer.this.pausedForNack.removeAll(partitions);
-					partitions.forEach(tp -> ListenerConsumer.this.lastCommits.remove(tp));
-					synchronized (ListenerConsumer.this) {
-						if (ListenerConsumer.this.offsetsInThisBatch != null) {
-							partitions.forEach(tp -> {
-								ListenerConsumer.this.offsetsInThisBatch.remove(tp);
-								ListenerConsumer.this.deferredOffsets.remove(tp);
-							});
-						}
-					}
+				this.revoked.addAll(partitions);
+				removeRevocationsFromPending(partitions);
+				if (this.consumerAwareListener != null) {
+					this.consumerAwareListener.onPartitionsRevokedBeforeCommit(ListenerConsumer.this.consumer,
+							partitions);
 				}
-				finally {
-					if (ListenerConsumer.this.kafkaTxManager != null) {
-						closeProducers(partitions);
+				else {
+					this.userListener.onPartitionsRevoked(partitions);
+				}
+				try {
+					// Wait until now to commit, in case the user listener added acks
+					checkRebalanceCommits();
+					commitPendingAcks();
+					fixTxOffsetsIfNeeded();
+				}
+				catch (Exception e) {
+					ListenerConsumer.this.logger.error(e, () -> "Fatal commit error after revocation "
+							+ partitions);
+				}
+				if (this.consumerAwareListener != null) {
+					this.consumerAwareListener.onPartitionsRevokedAfterCommit(ListenerConsumer.this.consumer,
+							partitions);
+				}
+				if (ListenerConsumer.this.consumerSeekAwareListener != null) {
+					ListenerConsumer.this.consumerSeekAwareListener.onPartitionsRevoked(partitions);
+				}
+				if (ListenerConsumer.this.assignedPartitions != null) {
+					ListenerConsumer.this.assignedPartitions.removeAll(partitions);
+				}
+				ListenerConsumer.this.pausedForNack.removeAll(partitions);
+				partitions.forEach(ListenerConsumer.this.lastCommits::remove);
+				synchronized (ListenerConsumer.this) {
+					Map<TopicPartition, List<Long>> pendingOffsets = ListenerConsumer.this.offsetsInThisBatch;
+					if (pendingOffsets != null) {
+						partitions.forEach(tp -> {
+							pendingOffsets.remove(tp);
+							ListenerConsumer.this.deferredOffsets.remove(tp);
+						});
+						if (pendingOffsets.isEmpty()) {
+							ListenerConsumer.this.consumerPaused = false;
+						}
 					}
 				}
 			}
@@ -3531,7 +3529,16 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 			}
 
 			private void repauseIfNeeded(Collection<TopicPartition> partitions) {
-				if (isPaused() || ListenerConsumer.this.remainingRecords != null && !partitions.isEmpty()) {
+				boolean pending = false;
+				synchronized (ListenerConsumer.this) {
+					Map<TopicPartition, List<Long>> pendingOffsets = ListenerConsumer.this.offsetsInThisBatch;
+					if (!ObjectUtils.isEmpty(pendingOffsets)) {
+						pending = true;
+					}
+				}
+				if ((pending || isPaused() || ListenerConsumer.this.remainingRecords != null)
+						&& !partitions.isEmpty()) {
+
 					ListenerConsumer.this.consumer.pause(partitions);
 					ListenerConsumer.this.consumerPaused = true;
 					ListenerConsumer.this.logger.warn("Paused consumer resumed by Kafka due to rebalance; "
