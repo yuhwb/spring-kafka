@@ -89,6 +89,10 @@ None of these is essential for a pull request, but they will all help.
 * A few unit tests would help a lot as well - someone has to do it.
 * If no-one else is using your branch, please rebase it against the current main (or another target branch in the main project).
 
+# Getting Support
+Use the [`spring-kafka` tag on Stack Overflow](https://stackoverflow.com/questions/tagged/spring-kafka) to ask questions; include code and configuration and clearly explain your problem, providing an [MCRE](https://stackoverflow.com/help/minimal-reproducible-example) if possible.
+[Commercial support](https://spring.io/support) is also available.
+
 # License
 
 Spring Kafka is released under the terms of the Apache Software License Version 2.0 (see LICENSE.txt).
