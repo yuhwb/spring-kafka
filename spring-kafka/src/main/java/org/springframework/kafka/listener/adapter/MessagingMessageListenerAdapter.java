@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -665,11 +665,10 @@ public abstract class MessagingMessageListenerAdapter<K, V> implements ConsumerS
 				this.isConsumerRecordList = paramType.equals(ConsumerRecord.class)
 						|| (isSimpleListOfConsumerRecord(paramType)
 						|| isListOfConsumerRecordUpperBounded(paramType));
-				boolean messageHasGeneric = paramType instanceof ParameterizedType
-						&& ((ParameterizedType) paramType).getRawType().equals(Message.class);
-				this.isMessageList = paramType.equals(Message.class) || messageHasGeneric;
-				if (messageHasGeneric) {
-					genericParameterType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
+				boolean messageWithGeneric = isMessageWithGeneric(paramType);
+				this.isMessageList = paramType.equals(Message.class) || messageWithGeneric;
+				if (messageWithGeneric) {
+					genericParameterType = messagePayloadType(paramType);
 				}
 			}
 			else {
@@ -679,36 +678,53 @@ public abstract class MessagingMessageListenerAdapter<K, V> implements ConsumerS
 		return genericParameterType;
 	}
 
+	private static Type messagePayloadType(Type paramType) {
+		if (paramType instanceof ParameterizedType) {
+			return ((ParameterizedType) paramType).getActualTypeArguments()[0];
+		}
+		else {
+			return ((ParameterizedType) ((WildcardType) paramType).getUpperBounds()[0]).getActualTypeArguments()[0];
+		}
+	}
+
+	private static boolean isMessageWithGeneric(Type paramType) {
+		return (paramType instanceof ParameterizedType
+				&& ((ParameterizedType) paramType).getRawType().equals(Message.class))
+				|| (isWildCardWithUpperBound(paramType) &&
+				((WildcardType) paramType).getUpperBounds()[0] instanceof ParameterizedType &&
+				((ParameterizedType) ((WildcardType) paramType).getUpperBounds()[0]).getRawType().equals(Message.class));
+	}
+
 	private boolean isSimpleListOfConsumerRecord(Type paramType) {
 		return paramType instanceof ParameterizedType
 				&& ((ParameterizedType) paramType).getRawType().equals(ConsumerRecord.class);
 	}
 
-	private boolean isListOfConsumerRecordUpperBounded(Type paramType) {
+	private static boolean isListOfConsumerRecordUpperBounded(Type paramType) {
 		return isWildCardWithUpperBound(paramType)
-			&& ((WildcardType) paramType).getUpperBounds()[0] instanceof ParameterizedType
-			&& ((ParameterizedType) ((WildcardType) paramType).getUpperBounds()[0])
-						.getRawType().equals(ConsumerRecord.class);
+				&& ((WildcardType) paramType).getUpperBounds()[0] instanceof ParameterizedType
+				&& ((ParameterizedType) ((WildcardType) paramType).getUpperBounds()[0])
+				.getRawType().equals(ConsumerRecord.class);
 	}
 
-	private boolean isWildCardWithUpperBound(Type paramType) {
+	private static boolean isWildCardWithUpperBound(Type paramType) {
 		return paramType instanceof WildcardType
-			&& ((WildcardType) paramType).getUpperBounds() != null
-			&& ((WildcardType) paramType).getUpperBounds().length > 0;
+				&& ((WildcardType) paramType).getUpperBounds() != null
+				&& ((WildcardType) paramType).getUpperBounds().length > 0;
 	}
 
-	private boolean isMessageWithNoTypeInfo(Type parameterType) {
+	private static boolean isMessageWithNoTypeInfo(Type parameterType) {
 		if (parameterType instanceof ParameterizedType) {
 			ParameterizedType parameterizedType = (ParameterizedType) parameterType;
 			Type rawType = parameterizedType.getRawType();
-			if  (rawType.equals(Message.class)) {
+			if (rawType.equals(Message.class)) {
 				return parameterizedType.getActualTypeArguments()[0] instanceof WildcardType;
 			}
 		}
 		return parameterType.equals(Message.class); // could be Message without a generic type
 	}
 
-	private boolean parameterIsType(Type parameterType, Type type) {
+	private static boolean parameterIsType(Type parameterType, Type type) {
 		if (parameterType instanceof ParameterizedType) {
 			ParameterizedType parameterizedType = (ParameterizedType) parameterType;
 			Type rawType = parameterizedType.getRawType();
