@@ -706,12 +706,11 @@ public abstract class MessagingMessageListenerAdapter<K, V> implements ConsumerS
 	}
 
 	private boolean isMessageWithGeneric(Type paramType) {
-		boolean messageHasGeneric = (paramType instanceof ParameterizedType pType
+		return (paramType instanceof ParameterizedType pType
 				&& pType.getRawType().equals(Message.class))
 				|| (isWildCardWithUpperBound(paramType)
 						&& ((WildcardType) paramType).getUpperBounds()[0] instanceof ParameterizedType wildCardZero
 						&& wildCardZero.getRawType().equals(Message.class));
-		return messageHasGeneric;
 	}
 
 	private boolean isSimpleListOfConsumerRecord(Type paramType) {
