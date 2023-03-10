@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,6 @@ import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
 import org.apache.kafka.clients.consumer.RetriableCommitFailedException;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.errors.AuthenticationException;
 import org.apache.kafka.common.errors.AuthorizationException;
 import org.apache.kafka.common.errors.FencedInstanceIdException;
 import org.apache.kafka.common.errors.RebalanceInProgressException;
@@ -97,6 +96,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.event.ConsumerPausedEvent;
 import org.springframework.kafka.event.ConsumerResumedEvent;
+import org.springframework.kafka.event.ConsumerStartedEvent;
 import org.springframework.kafka.event.ConsumerStoppedEvent;
 import org.springframework.kafka.event.ConsumerStoppedEvent.Reason;
 import org.springframework.kafka.event.ConsumerStoppingEvent;
@@ -3236,7 +3236,7 @@ public class KafkaMessageListenerContainerTests {
 		containerProps.setMessageListener((MessageListener) r -> { });
 		KafkaMessageListenerContainer<Integer, String> container =
 				new KafkaMessageListenerContainer<>(cf, containerProps);
-		testFatalErrorOnAuthenticationException(container, cf);
+		testFatalErrorOnAuthenticationException(container, cf, false);
 	}
 
 	@Test
@@ -3249,12 +3249,40 @@ public class KafkaMessageListenerContainerTests {
 		containerProps.setMessageListener((MessageListener) r -> { });
 		ConcurrentMessageListenerContainer<Integer, String> container =
 				new ConcurrentMessageListenerContainer<>(cf, containerProps);
-		testFatalErrorOnAuthenticationException(container, cf);
+		testFatalErrorOnAuthenticationException(container, cf, false);
+	}
+
+	@Test
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	void testFatalErrorOnAuthenticationExceptionRestart() throws InterruptedException {
+		ConsumerFactory<Integer, String> cf = mock(ConsumerFactory.class);
+		ContainerProperties containerProps = new ContainerProperties(topic1);
+		containerProps.setGroupId("grp");
+		containerProps.setClientId("clientId");
+		containerProps.setMessageListener((MessageListener) r -> { });
+		containerProps.setRestartAfterAuthExceptions(true);
+		KafkaMessageListenerContainer<Integer, String> container =
+				new KafkaMessageListenerContainer<>(cf, containerProps);
+		testFatalErrorOnAuthenticationException(container, cf, true);
+	}
+
+	@Test
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	void testFatalErrorOnAuthenticationExceptionConcurrentRestart() throws InterruptedException {
+		ConsumerFactory<Integer, String> cf = mock(ConsumerFactory.class);
+		ContainerProperties containerProps = new ContainerProperties(topic1);
+		containerProps.setGroupId("grp");
+		containerProps.setClientId("clientId");
+		containerProps.setMessageListener((MessageListener) r -> { });
+		containerProps.setRestartAfterAuthExceptions(true);
+		ConcurrentMessageListenerContainer<Integer, String> container =
+				new ConcurrentMessageListenerContainer<>(cf, containerProps);
+		testFatalErrorOnAuthenticationException(container, cf, true);
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void testFatalErrorOnAuthenticationException(AbstractMessageListenerContainer container,
-			ConsumerFactory<Integer, String> cf) throws InterruptedException {
+			ConsumerFactory<Integer, String> cf, boolean restart) throws InterruptedException {
 
 		Consumer<Integer, String> consumer = mock(Consumer.class);
 		given(cf.createConsumer(eq("grp"), eq("clientId"),
@@ -3262,12 +3290,18 @@ public class KafkaMessageListenerContainerTests {
 						.willReturn(consumer);
 		given(cf.getConfigurationProperties()).willReturn(new HashMap<>());
 
-		willThrow(AuthenticationException.class)
-				.given(consumer).poll(any());
+		AtomicBoolean first = new AtomicBoolean(true);
+		willAnswer(inv -> {
+			if (first.getAndSet(false)) {
+				throw new AuthorizationException("test");
+			}
+			return ConsumerRecords.empty();
+		}).given(consumer).poll(any());
 
 		AtomicReference<ConsumerStoppedEvent.Reason> reason = new AtomicReference<>();
 		CountDownLatch consumerStopped = new CountDownLatch(1);
 		CountDownLatch containerStopped = new CountDownLatch(1);
+		CountDownLatch containerStarted = new CountDownLatch(2);
 
 		container.setApplicationEventPublisher(e -> {
 			if (e instanceof ConsumerStoppedEvent) {
@@ -3277,6 +3311,9 @@ public class KafkaMessageListenerContainerTests {
 			else if (e instanceof ContainerStoppedEvent) {
 				containerStopped.countDown();
 			}
+			else if (e instanceof ConsumerStartedEvent) {
+				containerStarted.countDown();
+			}
 		});
 
 		container.start();
@@ -3284,7 +3321,13 @@ public class KafkaMessageListenerContainerTests {
 			assertThat(consumerStopped.await(10, TimeUnit.SECONDS)).isTrue();
 			assertThat(reason.get()).isEqualTo(Reason.AUTH);
 			assertThat(containerStopped.await(10, TimeUnit.SECONDS)).isTrue();
-			assertThat(container.isInExpectedState()).isFalse();
+			if (!restart) {
+				assertThat(container.isInExpectedState()).isFalse();
+			}
+			else {
+				assertThat(containerStarted.await(10, TimeUnit.SECONDS)).isTrue();
+				assertThat(container.isInExpectedState()).isTrue();
+			}
 		}
 		finally {
 			container.stop();
