@@ -119,7 +119,7 @@ public final class ErrorHandlingUtils {
 			KafkaException.Level logLevel, @Nullable List<RetryListener> retryListenersArg,
 			BinaryExceptionClassifier classifier) {
 
-		retryBatch(thrownException, records, consumer, container, invokeListener, backOff, seeker, null, logger,
+		retryBatch(thrownException, records, consumer, container, invokeListener, backOff, seeker, recoverer, logger,
 				logLevel, retryListenersArg, classifier, false);
 	}
 
@@ -224,7 +224,7 @@ public final class ErrorHandlingUtils {
 				((ConsumerPauseResumeEventPublisher) childOrSingle).publishConsumerResumedEvent(assignment2);
 			}
 		}
-	}
+	} // NOSONAR NCSS line count
 
 	private static void listen(@Nullable List<RetryListener> listeners, ConsumerRecords<?, ?> records,
 			Exception thrownException, int attempt) {
