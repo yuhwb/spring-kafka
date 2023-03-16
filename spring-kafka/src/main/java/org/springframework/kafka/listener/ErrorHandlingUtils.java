@@ -72,7 +72,7 @@ public final class ErrorHandlingUtils {
 			CommonErrorHandler seeker, BiConsumer<ConsumerRecords<?, ?>, Exception> recoverer, LogAccessor logger,
 			KafkaException.Level logLevel, List<RetryListener> retryListeners, BinaryExceptionClassifier classifier) {
 
-		retryBatch(thrownException, records, consumer, container, invokeListener, backOff, seeker, null, logger,
+		retryBatch(thrownException, records, consumer, container, invokeListener, backOff, seeker, recoverer, logger,
 				logLevel, retryListeners, classifier, false);
 	}
 
@@ -172,7 +172,7 @@ public final class ErrorHandlingUtils {
 				((ConsumerPauseResumeEventPublisher) childOrSingle).publishConsumerResumedEvent(assignment2);
 			}
 		}
-	}
+	} // NOSONAR NCSS line count
 
 	private static void listen(List<RetryListener> listeners, ConsumerRecords<?, ?> records,
 			Exception thrownException, int attempt) {
