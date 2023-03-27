@@ -87,3 +87,14 @@ See <<replying-template>> and <<exchanging-messages>>.
 
 You can now use a custom correlation header which will be echoed in any reply message.
 See the note at the end of <<replying-template>> for more information.
+
+[[x30-headers]]
+==== `KafkaHeaders` Changes
+
+Four constants in `KafkaHeaders` that were deprecated in 2.9.x have now been removed.
+
+* Instead of `MESSAGE_KEY`, use `KEY`.
+
+* Instead of `PARTITION_ID`, use `PARTITION`
+
+Similarly, `RECEIVED_MESSAGE_KEY` is replaced by `RECEIVED_KEY` and `RECEIVED_PARTITION_ID` is replaced by `RECEIVED_PARTITION`.
