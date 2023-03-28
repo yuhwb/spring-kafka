@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -266,7 +266,7 @@ public class KafkaListenerAnnotationBeanPostProcessor<K, V>
 	 * {@link #setEndpointRegistry endpoint registry} has to be explicitly configured.
 	 * @param beanFactory the {@link BeanFactory} to be used.
 	 */
-	public void setBeanFactory(BeanFactory beanFactory) {
+	public synchronized void setBeanFactory(BeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
 		if (beanFactory instanceof ConfigurableListableBeanFactory) {
 			this.resolver = ((ConfigurableListableBeanFactory) beanFactory).getBeanExpressionResolver();
@@ -447,8 +447,8 @@ public class KafkaListenerAnnotationBeanPostProcessor<K, V>
 		}
 	}
 
-	private void processMultiMethodListeners(Collection<KafkaListener> classLevelListeners, List<Method> multiMethods,
-			Object bean, String beanName) {
+	private synchronized void processMultiMethodListeners(Collection<KafkaListener> classLevelListeners,
+			List<Method> multiMethods, Object bean, String beanName) {
 
 		List<Method> checkedMethods = new ArrayList<>();
 		Method defaultMethod = null;
@@ -474,7 +474,9 @@ public class KafkaListenerAnnotationBeanPostProcessor<K, V>
 		}
 	}
 
-	protected void processKafkaListener(KafkaListener kafkaListener, Method method, Object bean, String beanName) {
+	protected synchronized void processKafkaListener(KafkaListener kafkaListener, Method method, Object bean,
+			String beanName) {
+
 		Method methodToUse = checkProxy(method, bean);
 		MethodKafkaListenerEndpoint<K, V> endpoint = new MethodKafkaListenerEndpoint<>();
 		endpoint.setMethod(methodToUse);
