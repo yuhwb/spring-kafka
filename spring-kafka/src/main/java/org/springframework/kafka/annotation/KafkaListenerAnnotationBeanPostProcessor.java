@@ -1158,7 +1158,7 @@ public class KafkaListenerAnnotationBeanPostProcessor<K, V>
 			if (validator != null) {
 				defaultFactory.setValidator(validator);
 			}
-			defaultFactory.setBeanFactory(KafkaListenerAnnotationBeanPostProcessor.this.beanFactory);
+			defaultFactory.setBeanFactory(KafkaListenerAnnotationBeanPostProcessor.this.beanFactory); // NOSONAR
 			this.defaultFormattingConversionService.addConverter(
 					new BytesToStringConverter(KafkaListenerAnnotationBeanPostProcessor.this.charset));
 			this.defaultFormattingConversionService.addConverter(new BytesToNumberConverter());
