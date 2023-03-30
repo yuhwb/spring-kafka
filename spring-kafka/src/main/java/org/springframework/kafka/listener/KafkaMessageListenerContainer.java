@@ -42,6 +42,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -752,6 +753,9 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 
 		private final boolean pauseImmediate = this.containerProperties.isPauseImmediate();
 
+		@Nullable
+		private final Function<ConsumerRecord<?, ?>, Map<String, String>> micrometerTagsProvider =
+				this.containerProperties.getMicrometerTagsProvider();
 		private Map<TopicPartition, OffsetMetadata> definedPartitions;
 
 		private int count;
@@ -1230,9 +1234,19 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 			MicrometerHolder holder = null;
 			try {
 				if (KafkaUtils.MICROMETER_PRESENT && this.containerProperties.isMicrometerEnabled()) {
+					Function<Object, Map<String, String>> mergedProvider =
+							cr -> this.containerProperties.getMicrometerTags();
+					if (this.micrometerTagsProvider != null) {
+						mergedProvider = cr -> {
+							Map<String, String> tags = new HashMap<>(this.containerProperties.getMicrometerTags());
+							if (cr != null) {
+								tags.putAll(this.micrometerTagsProvider.apply((ConsumerRecord<?, ?>) cr));
+							}
+							return tags;
+						};
+					}
 					holder = new MicrometerHolder(getApplicationContext(), getBeanName(),
-							"spring.kafka.listener", "Kafka Listener Timer",
-							this.containerProperties.getMicrometerTags());
+							"spring.kafka.listener", "Kafka Listener Timer", mergedProvider);
 				}
 			}
 			catch (@SuppressWarnings(UNUSED) IllegalStateException ex) {
@@ -2211,7 +2225,7 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 			try {
 				invokeBatchOnMessage(records, recordList);
 				batchInterceptAfter(records, null);
-				successTimer(sample);
+				successTimer(sample, null);
 				if (this.batchFailed) {
 					this.batchFailed = false;
 					if (this.commonErrorHandler != null) {
@@ -2224,7 +2238,7 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 				}
 			}
 			catch (RuntimeException e) {
-				failureTimer(sample);
+				failureTimer(sample, null);
 				batchInterceptAfter(records, e);
 				if (this.commonErrorHandler == null) {
 					throw e;
@@ -2302,15 +2316,25 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 			return null;
 		}
 
-		private void successTimer(@Nullable Object sample) {
+		private void successTimer(@Nullable Object sample, @Nullable ConsumerRecord<?, ?> record) {
 			if (sample != null) {
-				this.micrometerHolder.success(sample);
+				if (this.micrometerTagsProvider == null || record == null) {
+					this.micrometerHolder.success(sample);
+				}
+				else {
+					this.micrometerHolder.success(sample, record);
+				}
 			}
 		}
 
-		private void failureTimer(@Nullable Object sample) {
+		private void failureTimer(@Nullable Object sample, @Nullable ConsumerRecord<?, ?> record) {
 			if (sample != null) {
-				this.micrometerHolder.failure(sample, "ListenerExecutionFailedException");
+				if (this.micrometerTagsProvider == null || record == null) {
+					this.micrometerHolder.failure(sample, "ListenerExecutionFailedException");
+				}
+				else {
+					this.micrometerHolder.failure(sample, "ListenerExecutionFailedException", record);
+				}
 			}
 		}
 
@@ -2698,11 +2722,11 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 
 			try {
 				invokeOnMessage(record);
-				successTimer(sample);
+				successTimer(sample, record);
 				recordInterceptAfter(record, null);
 			}
 			catch (RuntimeException e) {
-				failureTimer(sample);
+				failureTimer(sample, record);
 				recordInterceptAfter(record, e);
 				if (this.commonErrorHandler == null) {
 					throw e;
