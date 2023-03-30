@@ -755,7 +755,6 @@ public class ContainerProperties extends ConsumerProperties {
 	 * @since 2.9.8
 	 * @see #setMicrometerEnabled(boolean)
 	 * @see #setMicrometerTags(Map)
-	 * @see #setObservationEnabled(boolean)
 	 */
 	public void setMicrometerTagsProvider(
 			@Nullable Function<ConsumerRecord<?, ?>, Map<String, String>> micrometerTagsProvider) {

@@ -353,7 +353,6 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, ApplicationCo
 	 * @since 2.9.8
 	 * @see #setMicrometerEnabled(boolean)
 	 * @see #setMicrometerTags(Map)
-	 * @see #setObservationEnabled(boolean)
 	 */
 	public void setMicrometerTagsProvider(
 			@Nullable Function<ProducerRecord<?, ?>, Map<String, String>> micrometerTagsProvider) {
