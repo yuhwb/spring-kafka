@@ -2751,15 +2751,20 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 			return null;
 		}
 
-		private void commitOffsetsIfNeeded(final ConsumerRecord<K, V> record) {
+		private void commitOffsetsIfNeeded(final ConsumerRecord<K, V> cRecord) {
 			if ((!this.autoCommit && this.commonErrorHandler.isAckAfterHandle())
 					|| this.producer != null) {
 				if (this.isManualAck) {
 					this.commitRecovered = true;
 				}
 				if (this.remainingRecords == null
-						|| !record.equals(this.remainingRecords.iterator().next())) {
-					ackCurrent(record);
+						|| !cRecord.equals(this.remainingRecords.iterator().next())) {
+					if (this.offsetsInThisBatch != null) { // NOSONAR (sync)
+						ackInOrder(cRecord);
+					}
+					else {
+						ackCurrent(cRecord);
+					}
 				}
 				if (this.isManualAck) {
 					this.commitRecovered = false;
