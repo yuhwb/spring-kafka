@@ -303,7 +303,7 @@ public @interface KafkaListener {
 	 * expression is provided ({@code #{...}}), the expression can either evaluate to a
 	 * {@link org.springframework.kafka.listener.adapter.RecordFilterStrategy} instance or
 	 * a bean name.
-	 * @return the error handler.
+	 * @return the filter.
 	 * @since 2.8.4
 	 */
 	String filter() default "";
