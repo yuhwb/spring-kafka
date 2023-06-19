@@ -67,7 +67,7 @@ ext {
 	jacksonBomVersion = '2.14.2'
 	jaywayJsonPathVersion = '2.7.0'
 	junit4Version = '4.13.2'
-	junitJupiterVersion = '5.9.2'
+	junitJupiterVersion = '5.9.3'
 	kafkaVersion = '3.3.2'
 	log4jVersion = '2.19.0'
 	micrometerDocsVersion = "1.0.2"
@@ -350,10 +350,14 @@ project ('spring-kafka') {
 		testImplementation 'io.projectreactor:reactor-test'
 		testImplementation "org.mockito:mockito-junit-jupiter:$mockitoVersion"
 		testImplementation "org.hibernate.validator:hibernate-validator:$hibernateValidationVersion"
-		testImplementation 'io.micrometer:micrometer-observation-test'
+		testImplementation ('io.micrometer:micrometer-observation-test') {
+			exclude group: "org.mockito"
+		}
 		testImplementation 'io.micrometer:micrometer-tracing-bridge-brave'
 		testImplementation 'io.micrometer:micrometer-tracing-test'
-		testImplementation 'io.micrometer:micrometer-tracing-integration-test'
+		testImplementation ('io.micrometer:micrometer-tracing-integration-test') {
+			exclude group: "org.mockito"
+		}
 
 	}
 
