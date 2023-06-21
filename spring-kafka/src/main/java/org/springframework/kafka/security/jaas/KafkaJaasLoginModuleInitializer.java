@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.springframework.util.Assert;
  *
  * @author Marius Bogoevici
  * @author Gary Russell
+ * @author Edan Idzerda
  *
  * @since 1.3
  */
@@ -143,7 +144,8 @@ public class KafkaJaasLoginModuleInitializer implements SmartInitializingSinglet
 					this.options);
 			configurationEntries.put(KAFKA_CLIENT_CONTEXT_NAME,
 					new AppConfigurationEntry[] { kafkaClientConfigurationEntry });
-			Configuration.setConfiguration(new InternalConfiguration(configurationEntries));
+			Configuration.setConfiguration(new InternalConfiguration(configurationEntries,
+					Configuration.getConfiguration()));
 			// Workaround for a 0.9 client issue where even if the Configuration is
 			// set
 			// a system property check is performed.
@@ -166,15 +168,19 @@ public class KafkaJaasLoginModuleInitializer implements SmartInitializingSinglet
 
 		private final Map<String, AppConfigurationEntry[]> configurationEntries;
 
-		InternalConfiguration(Map<String, AppConfigurationEntry[]> configurationEntries) {
+		private final Configuration delegate;
+
+		InternalConfiguration(Map<String, AppConfigurationEntry[]> configurationEntries, Configuration delegate) {
 			Assert.notNull(configurationEntries, " cannot be null");
 			Assert.notEmpty(configurationEntries, " cannot be empty");
 			this.configurationEntries = configurationEntries;
+			this.delegate = delegate;
 		}
 
 		@Override
 		public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-			return this.configurationEntries.get(name);
+			AppConfigurationEntry[] conf = this.delegate == null ? null : this.delegate.getAppConfigurationEntry(name);
+			return conf != null ? conf : this.configurationEntries.get(name);
 		}
 
 	}
