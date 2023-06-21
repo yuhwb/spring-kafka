@@ -875,7 +875,7 @@ public class DeadLetterPublishingRecoverer extends ExceptionClassifier implement
 	/**
 	 * Set a {@link Supplier} for {@link HeaderNames}.
 	 * @param supplier the supplier.
-	 * @since3.0.7
+	 * @since 3.0.9
 	 *
 	 */
 	public void setHeaderNamesSupplier(Supplier<HeaderNames> supplier) {
