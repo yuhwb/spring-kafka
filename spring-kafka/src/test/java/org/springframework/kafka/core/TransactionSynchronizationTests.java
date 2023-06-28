@@ -26,9 +26,6 @@ import org.apache.kafka.clients.producer.Producer;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.core.Ordered;
-import org.springframework.kafka.core.KafkaResourceHolder;
-import org.springframework.kafka.core.ProducerFactory;
-import org.springframework.kafka.core.ProducerFactoryUtils;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
