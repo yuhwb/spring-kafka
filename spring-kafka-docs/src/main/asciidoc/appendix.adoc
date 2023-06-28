@@ -37,7 +37,7 @@ Or, to use a different Spring for Apache Kafka version with a supported Spring B
 [source, groovy, subs="+attributes", role="secondary"]
 .Gradle
 ----
-ext['kafka.version'] = '3.4.0'
+ext['kafka.version'] = '3.5.0'
 ext['spring-kafka.version'] = '{project-version}'
 
 dependencies {
