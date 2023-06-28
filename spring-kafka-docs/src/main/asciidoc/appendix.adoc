@@ -14,7 +14,7 @@ For example, {project-version} is supported by Spring Boot 2.7.x which brings in
 .Maven
 ----
 <properties>
-    <kafka.version>3.2.3</kafka.version>
+    <kafka.version>3.5.0</kafka.version>
     <spring-kafka.version>{project-version}</spring-kafka.version>
 </properties>
 
@@ -38,7 +38,7 @@ For example, {project-version} is supported by Spring Boot 2.7.x which brings in
 [source, groovy, subs="+attributes", role="secondary"]
 .Gradle
 ----
-ext['kafka.version'] = '3.2.3'
+ext['kafka.version'] = '3.5.0'
 ext['spring-kafka.version'] = '{project-version}'
 
 dependencies {
