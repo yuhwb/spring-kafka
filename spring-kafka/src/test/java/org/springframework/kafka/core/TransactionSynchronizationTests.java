@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package transaction;
+package org.springframework.kafka.core;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
