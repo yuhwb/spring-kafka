@@ -766,7 +766,7 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 
 		private boolean taskSchedulerExplicitlySet;
 
-		private long lastReceive = System.currentTimeMillis();
+		private long lastReceive;
 
 		private long lastAlertAt = this.lastReceive;
 
@@ -1299,6 +1299,7 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 			initAssignedPartitions();
 			publishConsumerStartedEvent();
 			Throwable exitThrowable = null;
+			this.lastReceive = System.currentTimeMillis();
 			while (isRunning()) {
 				try {
 					pollAndInvoke();
