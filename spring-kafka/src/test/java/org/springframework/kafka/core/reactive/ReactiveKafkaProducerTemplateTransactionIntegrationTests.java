@@ -37,6 +37,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
@@ -102,17 +103,18 @@ public class ReactiveKafkaProducerTemplateTransactionIntegrationTests {
 	}
 
 	@BeforeEach
-	public void setUp() {
-		reactiveKafkaProducerTemplate = new ReactiveKafkaProducerTemplate<>(setupSenderOptionsWithDefaultTopic(),
+	public void setUp(TestInfo info) {
+		reactiveKafkaProducerTemplate = new ReactiveKafkaProducerTemplate<>(setupSenderOptionsWithDefaultTopic(info),
 				new MessagingMessageConverter());
 	}
 
-	private SenderOptions<Integer, String> setupSenderOptionsWithDefaultTopic() {
+	private SenderOptions<Integer, String> setupSenderOptionsWithDefaultTopic(TestInfo info) {
 		Map<String, Object> senderProps =
 				KafkaTestUtils.producerProps(EmbeddedKafkaCondition.getBroker().getBrokersAsString());
 		SenderOptions<Integer, String> senderOptions = SenderOptions.create(senderProps);
 		senderOptions = senderOptions
-				.producerProperty(ProducerConfig.TRANSACTIONAL_ID_CONFIG, "reactive.transaction")
+				.producerProperty(ProducerConfig.TRANSACTIONAL_ID_CONFIG,
+						"reactive.transaction." + info.getDisplayName().replaceAll("\\(\\)", ""))
 				.producerProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
 		return senderOptions;
 	}
@@ -270,7 +272,9 @@ public class ReactiveKafkaProducerTemplateTransactionIntegrationTests {
 						.abort()
 						.then(Mono.error(error))))
 				.expectErrorMatches(throwable -> throwable instanceof IllegalStateException &&
-						throwable.getMessage().equals("TransactionalId reactive.transaction: Invalid transition " +
+						throwable.getMessage().equals("TransactionalId reactive.transaction."
+								+ "shouldSendOneRecordTransactionallyViaTemplateAsSenderRecord"
+								+ "AndReceiveItExactlyOnceWithException: Invalid transition " +
 								"attempted from state READY to state ABORTING_TRANSACTION"))
 				.verify(DEFAULT_VERIFY_TIMEOUT);
 
