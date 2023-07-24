@@ -13,7 +13,7 @@ Or, to use a different Spring for Apache Kafka version with a supported Spring B
 .Maven
 ----
 <properties>
-    <kafka.version>3.5.0</kafka.version>
+    <kafka.version>3.5.1</kafka.version>
     <spring-kafka.version>{project-version}</spring-kafka.version>
 </properties>
 
