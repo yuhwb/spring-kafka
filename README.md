@@ -1,4 +1,5 @@
 Spring for Apache Kafka [<img src="https://build.spring.io/plugins/servlet/wittified/build-status/SK-MAS">](https://build.spring.io/browse/SK-MAS)
+[![Revved up by Gradle Enterprise](https://img.shields.io/badge/Revved%20up%20by-Gradle%20Enterprise-06A0CE?logo=Gradle&labelColor=02303A)](https://ge.spring.io/scans?search.rootProjectNames=spring-kafka)
 ==================
 
 # Code of Conduct
