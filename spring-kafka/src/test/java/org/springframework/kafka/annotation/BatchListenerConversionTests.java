@@ -241,17 +241,17 @@ public class BatchListenerConversionTests {
 
 		private final String topic;
 
-		private final CountDownLatch latch1 = new CountDownLatch(1);
+		final CountDownLatch latch1 = new CountDownLatch(1);
 
-		private final CountDownLatch latch2 = new CountDownLatch(1);
+		final CountDownLatch latch2 = new CountDownLatch(1);
 
 		private final KafkaListenerContainerFactory<?> cf;
 
-		private List<Foo> received;
+		volatile List<Foo> received;
 
-		private List<String> receivedTopics;
+		volatile List<String> receivedTopics;
 
-		private List<Integer> receivedPartitions;
+		volatile List<Integer> receivedPartitions;
 
 		public Listener(String topic, KafkaListenerContainerFactory<?> cf) {
 			this.topic = topic;
@@ -288,9 +288,9 @@ public class BatchListenerConversionTests {
 
 	public static class Listener3 {
 
-		private final CountDownLatch latch1 = new CountDownLatch(1);
+		final CountDownLatch latch1 = new CountDownLatch(1);
 
-		private List<Message<Foo>> received;
+		volatile List<Message<Foo>> received;
 
 		@KafkaListener(topics = "blc3", groupId = "blc3")
 		public void listen1(List<Message<Foo>> foos) {
@@ -304,11 +304,11 @@ public class BatchListenerConversionTests {
 
 	public static class Listener4 {
 
-		private final CountDownLatch latch1 = new CountDownLatch(1);
+		final CountDownLatch latch1 = new CountDownLatch(1);
 
-		private List<Foo> received;
+		volatile List<Foo> received;
 
-		private List<Foo> replies;
+		volatile List<Foo> replies;
 
 		@KafkaListener(topics = "blc4", groupId = "blc4")
 		@SendTo
@@ -337,7 +337,7 @@ public class BatchListenerConversionTests {
 
 		final CountDownLatch latch2 = new CountDownLatch(1);
 
-		final List<Foo> received = new ArrayList<>();
+		final List<Foo> received = Collections.synchronizedList(new ArrayList<>());
 
 		volatile String dlt;
 
