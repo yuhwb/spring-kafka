@@ -77,6 +77,7 @@ public class KafkaMessageHeaderAccessor extends MessageHeaderAccessor {
 	 * @return the value, if present.
 	 * @throws IllegalArgumentException if the type is not correct.
 	 */
+	@SuppressWarnings("unchecked")
 	@Nullable
 	public <T> T getHeader(String key, Class<T> type) {
 		Object value = getHeader(key);
