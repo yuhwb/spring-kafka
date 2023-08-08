@@ -52,14 +52,16 @@ public interface Acknowledgment {
 	}
 
 	/**
-	 * Acknowledge the record at an index in the batch - commit the offset(s) of records in the batch
-	 * up to and including the index. Requires {@link AckMode#MANUAL_IMMEDIATE}. The index must be
-	 * greater than any previous partial batch acknowledgment index.
+	 * Acknowledge the record at an index in the batch - commit the offset(s) of records
+	 * in the batch up to and including the index. Requires
+	 * {@link AckMode#MANUAL_IMMEDIATE}. The index must be greater than any previous
+	 * partial batch acknowledgment index for this batch and in the range of the record
+	 * list. This method must be called on the listener thread.
 	 * @param index the index of the record to acknowledge.
 	 * @since 3.0.10
 	 */
 	default void acknowledge(int index) {
-		throw new UnsupportedOperationException("nack(sleep) is not supported by this Acknowledgment");
+		throw new UnsupportedOperationException("ack(index) is not supported by this Acknowledgment");
 	}
 
 	/**
