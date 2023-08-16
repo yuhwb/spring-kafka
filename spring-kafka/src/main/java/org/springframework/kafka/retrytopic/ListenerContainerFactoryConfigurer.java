@@ -28,7 +28,6 @@ import org.springframework.kafka.config.KafkaListenerContainerFactory;
 import org.springframework.kafka.config.KafkaListenerEndpoint;
 import org.springframework.kafka.listener.CommonErrorHandler;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
-import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.ContainerProperties.AckMode;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
@@ -44,10 +43,6 @@ import org.springframework.util.backoff.BackOff;
  * Decorates the provided {@link ConcurrentKafkaListenerContainerFactory} to add a
  * {@link DefaultErrorHandler} and the {@link DeadLetterPublishingRecoverer}
  * created by the {@link DeadLetterPublishingRecovererFactory}.
- *
- * Also sets {@link ContainerProperties#setIdlePartitionEventInterval(Long)}
- * and {@link ContainerProperties#setPollTimeout(long)} if its defaults haven't
- * been overridden by the user.
  *
  * Since 2.8.3 these configurations don't interfere with the provided factory
  * instance itself, so the same factory instance can be shared among retryable and
