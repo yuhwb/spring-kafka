@@ -25,7 +25,6 @@ plugins {
 	id 'io.spring.dependency-management' version '1.0.10.RELEASE' apply false
 	id 'com.jfrog.artifactory' version '4.33.1' apply false
 	id 'org.asciidoctor.jvm.pdf' version '3.3.2'
-	id 'org.asciidoctor.jvm.gems' version '3.3.2'
 	id 'org.asciidoctor.jvm.convert' version '3.3.2'
 }
 
@@ -46,7 +45,7 @@ ext {
 	linkScmUrl = 'https://github.com/spring-projects/spring-kafka'
 	linkScmConnection = 'https://github.com/spring-projects/spring-kafka.git'
 	linkScmDevConnection = 'git@github.com:spring-projects/spring-kafka.git'
-	springAsciidoctorBackendsVersion = '0.0.3'
+	springAsciidoctorBackendsVersion = '0.0.7'
 
 	javadocLinks = [
 		'https://docs.oracle.com/en/java/javase/17/docs/api/',
@@ -253,7 +252,7 @@ configure(javaProjects) { subproject ->
 		if (gitPresent) {
 			inputs.files(modifiedFiles.filter { f -> f.path.contains(subproject.name) })
 		}
-		outputs.dir('build')
+		outputs.dir('build/classes')
 
 		doLast {
 			def now = Calendar.instance.get(Calendar.YEAR) as String
@@ -495,7 +494,7 @@ task filterMetricsDocsContent(type: Copy) {
 asciidoctorPdf {
 	dependsOn prepareAsciidocBuild, filterMetricsDocsContent
 	baseDirFollowsSourceFile()
-	configurations 'asciidoctorExt'
+	configurations 'asciidoctorExtensions'
 
 	asciidoctorj {
 		sourceDir "$buildDir/asciidoc"
@@ -673,5 +672,3 @@ publishing {
 		}
 	}
 }
-
-apply from: "${rootDir}/gradle/docs.gradle"
