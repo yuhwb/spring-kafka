@@ -86,7 +86,7 @@ ext {
 
 nohttp {
 	source.include '**/src/**'
-	source.exclude '**/*.gif', '**/*.ks'
+	source.exclude '**/*.gif', '**/*.ks', '**/.gradle/**'
 }
 
 allprojects {
