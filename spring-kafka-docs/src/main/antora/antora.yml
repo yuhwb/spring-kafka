@@ -1,6 +1,6 @@
 name: kafka
 version: true
-title: Spring Kafka
+title: Spring for Apache Kafka
 nav:
   - modules/ROOT/nav.adoc
 ext:
