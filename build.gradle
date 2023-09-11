@@ -504,7 +504,7 @@ task api(type: Javadoc) {
 	destinationDir = new File(buildDir, 'api')
 }
 
-task docsZip(type: Zip, dependsOn: ['antora']) {
+task docsZip(type: Zip, dependsOn: [':spring-kafka-docs:antora']) {
 	group = 'Distribution'
 	archiveClassifier = 'docs'
 	description = "Builds -${archiveClassifier} archive containing api and reference " +
@@ -518,7 +518,7 @@ task docsZip(type: Zip, dependsOn: ['antora']) {
 		into 'api'
 	}
 
-	from ('build/site') {
+	from ('spring-kafka-docs/build/site') {
 		into 'reference/'
 	}
 }
