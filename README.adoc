@@ -1,9 +1,9 @@
-= Spring Kafka Docs Build
+= Spring for Apache Kafka Docs Build
 
 You're currently viewing the Antora playbook branch.
 The playbook branch hosts the docs build that is used to build and publish the production docs site.
 
-The Spring Kafka reference docs are built using https://antora.org[Antora].
+The Spring for Apache Kafka reference docs are built using https://antora.org[Antora].
 This README covers how to build the docs in a software branch as well as how to build the production docs site locally.
 
 == Building the Site
