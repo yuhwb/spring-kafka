@@ -58,6 +58,7 @@ import org.springframework.util.backoff.FixedBackOff;
 
 /**
  * @author Antonio Tomac
+ * @author Gary Russell
  * @since 2.9
  */
 @SpringJUnitConfig
@@ -80,7 +81,7 @@ public class PauseContainerWhileErrorHandlerIsRetryingTests {
 		await("for first 2 records")
 				.atMost(Duration.ofSeconds(10))
 				.untilAsserted(() -> assertThat(setup.received).as("received").contains("1", "2"));
-		assertThat(setup.processed).as("processed").contains("1", "2");
+		await().untilAsserted(() -> assertThat(setup.processed).as("processed").contains("1", "2"));
 
 		setup.triggerPause.set(true);
 		log("enable listener throwing");
@@ -92,7 +93,7 @@ public class PauseContainerWhileErrorHandlerIsRetryingTests {
 				.untilAsserted(() -> assertThat(setup.received)
 						.as("received")
 						.hasSizeGreaterThan(2));
-		assertThat(setup.processed).as("processed").hasSize(2);
+		await().untilAsserted(() -> assertThat(setup.processed).as("processed").hasSize(2));
 
 		setup.triggerPause.set(false);
 		setup.resumeContainer();
@@ -106,9 +107,9 @@ public class PauseContainerWhileErrorHandlerIsRetryingTests {
 				.untilAsserted(() -> assertThat(setup.received)
 						.as("received - all")
 						.contains("1", "2", "3", "4", "5", "6", "7", "8", "9"));
-		assertThat(setup.processed)
+		await().untilAsserted(() -> assertThat(setup.processed)
 				.as("processed all - not loosing 3, 4, 5")
-				.contains("1", "2", "3", "4", "5", "6", "7", "8", "9");
+				.contains("1", "2", "3", "4", "5", "6", "7", "8", "9"));
 	}
 
 	@Configuration
@@ -122,9 +123,11 @@ public class PauseContainerWhileErrorHandlerIsRetryingTests {
 		EmbeddedKafkaBroker embeddedKafkaBroker;
 
 		final Set<String> received = new LinkedHashSet<>();
+
 		final Set<String> processed = new LinkedHashSet<>();
 
 		final AtomicBoolean failing = new AtomicBoolean(false);
+
 		final AtomicBoolean triggerPause = new AtomicBoolean(false);
 
 		void resumeContainer() {
