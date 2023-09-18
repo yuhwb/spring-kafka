@@ -48,7 +48,6 @@ public class KafkaMessageHeaderAccessor extends MessageHeaderAccessor {
 	 * @throws IllegalStateException if the header is not present.
 	 * @see org.springframework.kafka.listener.ContainerProperties#setDeliveryAttemptHeader(boolean)
 	 */
-	@Nullable
 	public int getBlockingRetryDeliveryAttempt() {
 		Assert.state(getHeader(KafkaHeaders.DELIVERY_ATTEMPT) != null,
 				"Blocking delivery attempt header not present, "
