@@ -17,6 +17,7 @@
 package org.springframework.kafka.support.micrometer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 
@@ -33,12 +34,14 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.errors.InvalidTopicException;
 import org.apache.kafka.common.header.Headers;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
@@ -79,8 +82,9 @@ import io.micrometer.tracing.test.simple.SimpleTracer;
 
 /**
  * @author Gary Russell
- * @since 3.0
+ * @author Artem Bilan
  *
+ * @since 3.0
  */
 @SpringJUnitConfig
 @EmbeddedKafka(topics = { "observation.testT1", "observation.testT2", "ObservationTests.testT3" })
@@ -213,6 +217,14 @@ public class ObservationTests {
 				.getPropertyValue(endpointRegistry.getListenerContainer("obs3"), "containers", List.class).get(0);
 		cAdmin = KafkaTestUtils.getPropertyValue(container, "listenerConsumer.kafkaAdmin", KafkaAdmin.class);
 		assertThat(cAdmin).isSameAs(config.mockAdmin);
+
+		assertThatExceptionOfType(KafkaException.class)
+				.isThrownBy(() -> template.send("wrong%Topic", "data"))
+				.withCauseExactlyInstanceOf(InvalidTopicException.class);
+
+		MeterRegistryAssert.assertThat(meterRegistry)
+				.hasTimerWithNameAndTags("spring.kafka.template", KeyValues.of("error", "InvalidTopicException"))
+				.doesNotHaveMeterWithNameAndTags("spring.kafka.template", KeyValues.of("error", "KafkaException"));
 	}
 
 	@Configuration
@@ -232,7 +244,7 @@ public class ObservationTests {
 		@Bean
 		ProducerFactory<Integer, String> producerFactory(EmbeddedKafkaBroker broker) {
 			Map<String, Object> producerProps = KafkaTestUtils.producerProps(broker);
-			producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,  broker.getBrokersAsString() + ","
+			producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, broker.getBrokersAsString() + ","
 					+ broker.getBrokersAsString());
 			return new DefaultKafkaProducerFactory<>(producerProps);
 		}
@@ -240,7 +252,7 @@ public class ObservationTests {
 		@Bean
 		ConsumerFactory<Integer, String> consumerFactory(EmbeddedKafkaBroker broker) {
 			Map<String, Object> consumerProps = KafkaTestUtils.consumerProps("obs", "false", broker);
-			consumerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,  broker.getBrokersAsString() + ","
+			consumerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, broker.getBrokersAsString() + ","
 					+ broker.getBrokersAsString() + "," + broker.getBrokersAsString());
 			return new DefaultKafkaConsumerFactory<>(consumerProps);
 		}

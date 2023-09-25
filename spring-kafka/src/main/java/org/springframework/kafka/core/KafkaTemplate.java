@@ -754,8 +754,11 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, ApplicationCo
 			return doSend(producerRecord, observation);
 		}
 		catch (RuntimeException ex) {
-			observation.error(ex);
-			observation.stop();
+			// The error is added from org.apache.kafka.clients.producer.Callback
+			if (observation.getContext().getError() == null) {
+				observation.error(ex);
+				observation.stop();
+			}
 			throw ex;
 		}
 	}
@@ -781,7 +784,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, ApplicationCo
 		}
 		Future<RecordMetadata> sendFuture =
 				producer.send(producerRecord, buildCallback(producerRecord, producer, future, sample, observation));
-		// May be an immediate failure
+		// Maybe an immediate failure
 		if (sendFuture.isDone()) {
 			try {
 				sendFuture.get();
