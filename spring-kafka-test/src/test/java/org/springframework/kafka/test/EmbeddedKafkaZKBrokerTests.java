@@ -14,31 +14,32 @@
  * limitations under the License.
  */
 
-package org.springframework.kafka.test.condition;
+package org.springframework.kafka.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-
-import org.springframework.kafka.test.EmbeddedKafkaBroker;
-import org.springframework.kafka.test.context.EmbeddedKafka;
-import org.springframework.kafka.test.utils.KafkaTestUtils;
 
 /**
  * @author Gary Russell
  * @since 2.3
  *
  */
-@EmbeddedKafka(bootstrapServersProperty = "my.bss.property", count = 2, controlledShutdown = true, partitions = 3,
-		kraft = false)
-public class EmbeddedKafkaConditionTests {
+public class EmbeddedKafkaZKBrokerTests {
 
 	@Test
-	public void test(EmbeddedKafkaBroker broker) {
-		assertThat(broker.getBrokersAsString()).isNotNull();
-		assertThat(KafkaTestUtils.getPropertyValue(broker, "brokerListProperty")).isEqualTo("my.bss.property");
-		assertThat(KafkaTestUtils.getPropertyValue(broker, "controlledShutdown")).isEqualTo(Boolean.TRUE);
-		assertThat(broker.getPartitionsPerTopic()).isEqualTo(3);
+	void testUpDown() {
+		EmbeddedKafkaZKBroker kafka = new EmbeddedKafkaZKBroker(1);
+		kafka.brokerListProperty("foo.bar");
+		kafka.afterPropertiesSet();
+		assertThat(kafka.getZookeeperConnectionString()).startsWith("127");
+		assertThat(System.getProperty("foo.bar")).isNotNull();
+		assertThat(System.getProperty(EmbeddedKafkaBroker.SPRING_EMBEDDED_KAFKA_BROKERS))
+				.isEqualTo(System.getProperty("foo.bar"));
+		kafka.destroy();
+		assertThat(kafka.getZookeeperConnectionString()).isNull();
+		assertThat(System.getProperty("foo.bar")).isNull();
+		assertThat(System.getProperty(EmbeddedKafkaBroker.SPRING_EMBEDDED_KAFKA_BROKERS)).isNull();
 	}
 
 }

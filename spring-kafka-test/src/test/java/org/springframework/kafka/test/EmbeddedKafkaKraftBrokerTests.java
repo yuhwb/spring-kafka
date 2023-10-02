@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 the original author or authors.
+ * Copyright 2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,26 +20,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.util.StringUtils;
+
 /**
  * @author Gary Russell
- * @since 2.3
+ * @since 3.1
  *
  */
-public class EmbeddedKafkaBrokerTests {
+public class EmbeddedKafkaKraftBrokerTests {
 
 	@Test
 	void testUpDown() {
-		EmbeddedKafkaBroker kafka = new EmbeddedKafkaBroker(1);
-		kafka.brokerListProperty("foo.bar");
+		EmbeddedKafkaKraftBroker kafka = new EmbeddedKafkaKraftBroker(1, 1, "topic1");
 		kafka.afterPropertiesSet();
-		assertThat(kafka.getZookeeperConnectionString()).startsWith("127");
-		assertThat(System.getProperty("foo.bar")).isNotNull();
-		assertThat(System.getProperty(EmbeddedKafkaBroker.SPRING_EMBEDDED_KAFKA_BROKERS))
-				.isEqualTo(System.getProperty("foo.bar"));
+		assertThat(StringUtils.hasText(kafka.getBrokersAsString())).isTrue();
 		kafka.destroy();
-		assertThat(kafka.getZookeeperConnectionString()).isNull();
-		assertThat(System.getProperty("foo.bar")).isNull();
-		assertThat(System.getProperty(EmbeddedKafkaBroker.SPRING_EMBEDDED_KAFKA_BROKERS)).isNull();
 	}
 
 }
