@@ -166,7 +166,7 @@ public class ErrorHandlingDeserializer<T> implements Deserializer<T> {
 		if (configs.containsKey(configKey)) {
 			try {
 				Object value = configs.get(configKey);
-				Class<?> clazz = value instanceof Class cls ? cls : ClassUtils.forName((String) value, null);
+				Class<?> clazz = value instanceof Class<?> cls ? cls : ClassUtils.forName((String) value, null);
 				Assert.isTrue(Function.class.isAssignableFrom(clazz), "'function' must be a 'Function ', not a "
 						+ clazz.getName());
 				this.failedDeserializationFunction = (Function<FailedDeserializationInfo, T>)
@@ -182,7 +182,7 @@ public class ErrorHandlingDeserializer<T> implements Deserializer<T> {
 		if (configs.containsKey(VALIDATOR_CLASS) && this.validator == null) {
 			try {
 				Object value = configs.get(VALIDATOR_CLASS);
-				Class<?> clazz = value instanceof Class cls ? cls : ClassUtils.forName((String) value, null);
+				Class<?> clazz = value instanceof Class<?> cls ? cls : ClassUtils.forName((String) value, null);
 				Object instance = clazz.getDeclaredConstructor().newInstance();
 				Assert.isInstanceOf(Validator.class, instance, "'validator' must be a 'Validator', not a ");
 				this.validator = (Validator) instance;
