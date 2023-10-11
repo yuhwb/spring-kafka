@@ -50,3 +50,10 @@ See <<replying-template>>.
 
 In 3.0, the futures returned by this class will be `CompletableFuture` s instead of `ListenableFuture` s.
 See <<replying-template>> and <<exchanging-messages>> for assistance in transitioning when using this release.
+
+[[x29-jd]]
+=== JsonDeserializer (Since 2.9.13)
+
+When a deserialization exception occurs, the `SerializationException` message no longer contains the data with the form `Can't deserialize data [[123, 34, 98, 97, 122, ...`; an array of numerical values for each data byte is not useful and can be verbose for large data.
+When used with an `ErrorHandlingDeserializer`, the `DeserializationException` sent to the error handler contains the `data` property which contains the raw data that could not be deserialized.
+When not used with an `ErrorHandlingDeserializer`, the `KafkaConsumer` will continually emit exceptions for the same record showing the topic/partition/offset and the cause thrown by Jackson.
