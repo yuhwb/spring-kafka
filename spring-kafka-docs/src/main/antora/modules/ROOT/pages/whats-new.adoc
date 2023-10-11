@@ -17,3 +17,10 @@ This version requires the 3.5.1 `kafka-clients`.
 
 An additional implementation is now provided to use `Kraft` instead of Zookeeper.
 See <<ekb>> for more information.
+
+[[x31-jd]]
+=== JsonDeserializer
+
+When a deserialization exception occurs, the `SerializationException` message no longer contains the data with the form `Can't deserialize data [[123, 34, 98, 97, 122, ...`; an array of numerical values for each data byte is not useful and can be verbose for large data.
+When used with an `ErrorHandlingDeserializer`, the `DeserializationException` sent to the error handler contains the `data` property which contains the raw data that could not be deserialized.
+When not used with an `ErrorHandlingDeserializer`, the `KafkaConsumer` will continually emit exceptions for the same record showing the topic/partition/offset and the cause thrown by Jackson.
