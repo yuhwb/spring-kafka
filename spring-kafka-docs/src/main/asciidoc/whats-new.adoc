@@ -109,3 +109,10 @@ Version 3.0.7 introduced a `MockConsumerFactory` and `MockProducerFactory`.
 See <<mock-cons-prod>> for more information.
 
 Starting with version 3.0.10, the embedded Kafka broker, by default, sets the Spring Boot property `spring.kafka.bootstrap-servers` to the address(es) of the embedded broker(s).
+
+[[x30-jd]]
+=== JsonDeserializer (Since 3.0.12)
+
+When a deserialization exception occurs, the `SerializationException` message no longer contains the data with the form `Can't deserialize data [[123, 34, 98, 97, 122, ...`; an array of numerical values for each data byte is not useful and can be verbose for large data.
+When used with an `ErrorHandlingDeserializer`, the `DeserializationException` sent to the error handler contains the `data` property which contains the raw data that could not be deserialized.
+When not used with an `ErrorHandlingDeserializer`, the `KafkaConsumer` will continually emit exceptions for the same record showing the topic/partition/offset and the cause thrown by Jackson.
