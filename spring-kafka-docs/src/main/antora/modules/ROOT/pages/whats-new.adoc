@@ -16,7 +16,7 @@ This version requires the 3.5.1 `kafka-clients`.
 === EmbeddedKafkaBroker
 
 An additional implementation is now provided to use `Kraft` instead of Zookeeper.
-See <<ekb>> for more information.
+See xref:testing.adoc#ekb[Embedded Kafka Broker] for more information.
 
 [[x31-jd]]
 === JsonDeserializer

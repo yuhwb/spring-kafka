@@ -4,7 +4,7 @@
 The `spring-kafka-test` jar contains some useful utilities to assist with testing your applications.
 
 [[ekb]]
-== EmbeddedKafkaBroker
+== Embedded Kafka Broker
 
 Two implementations are provided:
 
