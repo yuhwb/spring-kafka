@@ -2737,6 +2737,7 @@ public class KafkaMessageListenerContainerTests {
 			return null;
 		}).given(consumer).pause(any());
 		given(consumer.paused()).willReturn(pausedParts);
+		CountDownLatch firstPoll = new CountDownLatch(1);
 		given(consumer.poll(any(Duration.class))).willAnswer(i -> {
 			if (paused.get()) {
 				pauseLatch1.countDown();
@@ -2744,6 +2745,7 @@ public class KafkaMessageListenerContainerTests {
 				suspendConsumerThread.await(10, TimeUnit.SECONDS);
 			}
 			Thread.sleep(50);
+			firstPoll.countDown();
 			return ConsumerRecords.empty();
 		});
 		AtomicReference<ConsumerRebalanceListener> rebal = new AtomicReference<>();
@@ -2766,6 +2768,7 @@ public class KafkaMessageListenerContainerTests {
 				new KafkaMessageListenerContainer<>(cf, containerProps);
 		container.start();
 		InOrder inOrder = inOrder(consumer);
+		assertThat(firstPoll.await(10, TimeUnit.SECONDS)).isNotNull();
 		container.pausePartition(tp0);
 		container.pausePartition(tp1);
 		assertThat(pauseLatch1.await(10, TimeUnit.SECONDS)).isTrue();
