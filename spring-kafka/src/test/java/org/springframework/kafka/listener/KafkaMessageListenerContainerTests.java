@@ -2744,8 +2744,8 @@ public class KafkaMessageListenerContainerTests {
 				// hold up the consumer thread while we revoke/assign partitions on the test thread
 				suspendConsumerThread.await(10, TimeUnit.SECONDS);
 			}
-			Thread.sleep(50);
 			firstPoll.countDown();
+			Thread.sleep(50);
 			return ConsumerRecords.empty();
 		});
 		AtomicReference<ConsumerRebalanceListener> rebal = new AtomicReference<>();
