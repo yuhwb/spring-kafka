@@ -376,7 +376,7 @@ Use `KEY_SERIALIZATION_TOPIC_CONFIG` when using this for keys.
 @Bean
 public ProducerFactory<Integer, Object> producerFactory(Map<String, Object> config) {
     return new DefaultKafkaProducerFactory<>(config,
-            null,
+            new IntegerSerializer(),
             new DelegatingByTopicSerializer(Map.of(
                     Pattern.compile("topic[0-4]"), new ByteArraySerializer(),
                     Pattern.compile("topic[5-9]"), new StringSerializer())),
