@@ -31,19 +31,19 @@ publishing {
 						id = 'sobychacko'
 						name = 'Soby Chacko'
 						email = 'soby.chacko@broadcom.com'
-						roles = ["project lead"]
+						roles = ['project lead']
 					}
 					developer {
 						id = 'garyrussell'
 						name = 'Gary Russell'
 						email = 'github@gprussell.net'
-						roles = ["project lead emeritus"]
+						roles = ['project founder and project lead emeritus']
 					}
 					developer {
 						id = 'artembilan'
 						name = 'Artem Bilan'
 						email = 'artem.bilan@broadcom.com'
-						roles = ["contributor"]
+						roles = ['contributor']
 					}
 				}
 				issueManagement {
