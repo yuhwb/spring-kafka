@@ -13,7 +13,7 @@ permissions:
   actions: write
 
 env:
-  GITHUB_TOKEN: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}
+  GH_TOKEN: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}
 
 jobs:
   build:
