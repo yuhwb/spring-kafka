@@ -146,6 +146,9 @@ public class EmbeddedKafkaKraftBroker implements EmbeddedKafkaBroker {
 	}
 
 	/**
+	 * IMPORTANT: It is not possible to configure custom ports when using KRaft based EmbeddedKafka.
+	 * The {@link KafkaClusterTestKit} does not support setting custom ports at the moment.
+	 * Therefore, this property is out of use.
 	 * Set explicit ports on which the kafka brokers will listen. Useful when running an
 	 * embedded broker that you want to access from other processes.
 	 * @param ports the ports.

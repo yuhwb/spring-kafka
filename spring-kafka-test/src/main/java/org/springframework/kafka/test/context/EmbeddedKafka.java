@@ -97,13 +97,15 @@ public @interface EmbeddedKafka {
 	 * Set explicit ports on which the kafka brokers will listen. Useful when running an
 	 * embedded broker that you want to access from other processes.
 	 * A port must be provided for each instance, which means the number of ports must match the value of the count attribute.
+	 * This property is not valid when using KRaft mode.
 	 * @return ports for brokers.
 	 * @since 2.2.4
 	 */
 	int[] ports() default { 0 };
 
 	/**
-	 * Set the port on which the embedded Zookeeper should listen;
+	 * Set the port on which the embedded Zookeeper should listen.
+	 * This property is not valid when using KRaft mode.
 	 * @return the port.
 	 * @since 2.3
 	 */
@@ -165,14 +167,16 @@ public @interface EmbeddedKafka {
 
 	/**
 	 * Timeout for internal ZK client connection.
-	 * @return default {@link EmbeddedKafkaBroker#DEFAULT_ZK_CONNECTION_TIMEOUT}.
+	 * This property is not valid when using KRaft mode.
+	 * @return default {@link EmbeddedKafkaZKBroker#DEFAULT_ZK_CONNECTION_TIMEOUT}.
 	 * @since 2.4
 	 */
 	int zkConnectionTimeout() default EmbeddedKafkaZKBroker.DEFAULT_ZK_CONNECTION_TIMEOUT;
 
 	/**
 	 * Timeout for internal ZK client session.
-	 * @return default {@link EmbeddedKafkaBroker#DEFAULT_ZK_SESSION_TIMEOUT}.
+	 * This property is not valid when using KRaft mode.
+	 * @return default {@link EmbeddedKafkaZKBroker#DEFAULT_ZK_SESSION_TIMEOUT}.
 	 * @since 2.4
 	 */
 	int zkSessionTimeout() default EmbeddedKafkaZKBroker.DEFAULT_ZK_SESSION_TIMEOUT;
