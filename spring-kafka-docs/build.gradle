@@ -21,8 +21,3 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 }
 
-project.afterEvaluate {
-    if (tasks.findByName('artifactoryPublish')) {
-        project.tasks.artifactoryPublish.enabled(false)
-    }
-}
