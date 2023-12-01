@@ -393,7 +393,7 @@ public class KafkaListenerAnnotationBeanPostProcessor<K, V>
 					}
 				}
 				this.logger.debug(() -> annotatedMethods.size() + " @KafkaListener methods processed on bean '"
-							+ beanName + "': " + annotatedMethods);
+						+ beanName + "': " + annotatedMethods);
 			}
 			if (hasClassLevelListeners) {
 				processMultiMethodListeners(classLevelListeners, multiMethods, bean, beanName);
@@ -446,7 +446,7 @@ public class KafkaListenerAnnotationBeanPostProcessor<K, V>
 		}
 		else {
 			return AnnotationUtils.synthesizeAnnotation(
-				this.enhancer.apply(AnnotationUtils.getAnnotationAttributes(ann), element), KafkaListener.class, null);
+					this.enhancer.apply(AnnotationUtils.getAnnotationAttributes(ann), element), KafkaListener.class, null);
 		}
 	}
 
@@ -511,7 +511,7 @@ public class KafkaListenerAnnotationBeanPostProcessor<K, V>
 
 		RetryTopicConfiguration retryTopicConfiguration = new RetryTopicConfigurationProvider(this.beanFactory,
 				this.resolver, this.expressionContext)
-						.findRetryConfigurationFor(retryableCandidates, methodToUse, bean);
+				.findRetryConfigurationFor(retryableCandidates, methodToUse, bean);
 
 		if (retryTopicConfiguration == null) {
 			String[] candidates = retryableCandidates;
@@ -577,7 +577,7 @@ public class KafkaListenerAnnotationBeanPostProcessor<K, V>
 					() -> rtc);
 
 			return this.beanFactory
-				.getBean(RetryTopicBeanNames.RETRY_TOPIC_CONFIGURER_BEAN_NAME, RetryTopicConfigurer.class);
+					.getBean(RetryTopicBeanNames.RETRY_TOPIC_CONFIGURER_BEAN_NAME, RetryTopicConfigurer.class);
 		}
 		throw new IllegalStateException("When there is no RetryTopicConfigurationSupport bean, the application context "
 				+ "must be a GenericApplicationContext");
@@ -618,7 +618,7 @@ public class KafkaListenerAnnotationBeanPostProcessor<K, V>
 	}
 
 	protected void processListener(MethodKafkaListenerEndpoint<?, ?> endpoint, KafkaListener kafkaListener,
-								Object bean, String beanName, String[] topics, TopicPartitionOffset[] tps) {
+			Object bean, String beanName, String[] topics, TopicPartitionOffset[] tps) {
 
 		processKafkaListenerAnnotation(endpoint, kafkaListener, bean, topics, tps);
 
@@ -696,7 +696,7 @@ public class KafkaListenerAnnotationBeanPostProcessor<K, V>
 		}
 	}
 
-	@SuppressWarnings({ "rawtypes", UNCHECKED })
+	@SuppressWarnings({"rawtypes", UNCHECKED})
 	private void resolveFilter(MethodKafkaListenerEndpoint<?, ?> endpoint, KafkaListener kafkaListener) {
 		Object filter = resolveExpression(kafkaListener.filter());
 		if (filter instanceof RecordFilterStrategy rfs) {
@@ -743,7 +743,7 @@ public class KafkaListenerAnnotationBeanPostProcessor<K, V>
 	}
 
 	private void resolveContainerPostProcessor(MethodKafkaListenerEndpoint<?, ?> endpoint,
-		KafkaListener kafkaListener) {
+			KafkaListener kafkaListener) {
 
 		final String containerPostProcessor = kafkaListener.containerPostProcessor();
 		if (StringUtils.hasText(containerPostProcessor)) {
@@ -1141,7 +1141,7 @@ public class KafkaListenerAnnotationBeanPostProcessor<K, V>
 	 * have been registered but not created yet.
 	 * @see KafkaListenerEndpointRegistrar#setMessageHandlerMethodFactory
 	 */
-	private class KafkaHandlerMethodFactoryAdapter implements MessageHandlerMethodFactory {
+	private final class KafkaHandlerMethodFactoryAdapter implements MessageHandlerMethodFactory {
 
 		private final DefaultFormattingConversionService defaultFormattingConversionService =
 				new DefaultFormattingConversionService();
@@ -1191,14 +1191,8 @@ public class KafkaListenerAnnotationBeanPostProcessor<K, V>
 
 	}
 
-	private static class BytesToStringConverter implements Converter<byte[], String> {
+	private record BytesToStringConverter(Charset charset) implements Converter<byte[], String> {
 
-
-		private final Charset charset;
-
-		BytesToStringConverter(Charset charset) {
-			this.charset = charset;
-		}
 
 		@Override
 		public String convert(byte[] source) {

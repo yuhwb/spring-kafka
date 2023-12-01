@@ -37,6 +37,8 @@ import org.springframework.retry.support.RetrySynchronizationManager;
  * {@link BackOffPolicy}.
  *
  * @author Tomaz Fernandes
+ * @author Artem Bilan
+ *
  * @since 2.7
  *
  */
@@ -77,7 +79,8 @@ public class BackOffValuesGenerator {
 
 	private List<Long> generateFromSleepingBackOffPolicy(int maxAttempts, BackOffPolicy providedBackOffPolicy) {
 		BackoffRetainerSleeper sleeper = new BackoffRetainerSleeper();
-		SleepingBackOffPolicy<?> retainingBackOffPolicy = ((SleepingBackOffPolicy<?>) providedBackOffPolicy).withSleeper(sleeper);
+		SleepingBackOffPolicy<?> retainingBackOffPolicy =
+				((SleepingBackOffPolicy<?>) providedBackOffPolicy).withSleeper(sleeper);
 
 		// UniformRandomBackOffPolicy loses the max value when a sleeper is set.
 		if (providedBackOffPolicy instanceof UniformRandomBackOffPolicy) {
@@ -101,19 +104,21 @@ public class BackOffValuesGenerator {
 	/**
 	 * This class is injected in the backoff policy to gather and hold the generated backoff values.
 	 */
-	private static class BackoffRetainerSleeper implements Sleeper {
+	private static final class BackoffRetainerSleeper implements Sleeper {
 
 		private static final long serialVersionUID = 1L;
 
-		private transient List<Long> backoffValues = new ArrayList<>();
+		private final transient List<Long> backoffValues = new ArrayList<>();
 
 		@Override
-		public void sleep(long backOffPeriod) throws InterruptedException {
+		public void sleep(long backOffPeriod) {
 			this.backoffValues.add(backOffPeriod);
 		}
 
 		public List<Long> getBackoffValues() {
 			return this.backoffValues;
 		}
+
 	}
+
 }

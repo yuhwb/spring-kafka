@@ -21,8 +21,6 @@ publishMavenJavaPublicationToMavenLocal {
     enabled = false
 }
 
-project.afterEvaluate {
-
-    project.tasks.artifactoryPublish.enabled(false)
-
+if (tasks.findByName('artifactoryPublish')) {
+    artifactoryPublish.skip = true
 }

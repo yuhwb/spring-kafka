@@ -1,6 +1,6 @@
 buildscript {
 	ext.kotlinVersion = '1.9.10'
-	ext.isCI = System.getenv('GITHUB_ACTION') || System.getenv('bamboo_buildKey')
+	ext.isCI = System.getenv('GITHUB_ACTION')
 	repositories {
 		mavenCentral()
 		gradlePluginPortal()
@@ -19,20 +19,12 @@ plugins {
 	id 'base'
 	id 'project-report'
 	id 'idea'
-	id 'org.sonarqube' version '4.3.0.3225'
-	id 'org.ajoberstar.grgit' version '4.0.1' apply false
+	id 'org.ajoberstar.grgit' version '4.1.1'
 	id 'io.spring.nohttp' version '0.0.11'
-	id 'io.spring.dependency-management' version '1.0.10.RELEASE' apply false
-	id 'com.jfrog.artifactory' version '4.33.1' apply false
+	id 'io.spring.dependency-management' version '1.1.4' apply false
 }
 
 apply plugin: 'io.spring.nohttp'
-
-def gitPresent = new File('.git').exists()
-
-if(gitPresent) {
-	apply plugin: 'org.ajoberstar.grgit'
-}
 
 description = 'Spring for Apache Kafka'
 
@@ -50,10 +42,13 @@ ext {
 	] as String[]
 
 
-	if (gitPresent) {
-		modifiedFiles =  providers.provider {
-			files(grgit.status().unstaged.modified).filter{ f -> f.name.endsWith('.java') || f.name.endsWith('.kt') } }
-	}
+	modifiedFiles =
+			files()
+					.from {
+						files(grgit.status().unstaged.modified)
+								.filter { f -> f.name.endsWith('.java') || f.name.endsWith('.kt') }
+					}
+	modifiedFiles.finalizeValueOnRead()
 
 	assertjVersion = '3.24.2'
 	awaitilityVersion = '4.2.0'
@@ -131,7 +126,6 @@ configure(javaProjects) { subproject ->
 	apply from: "${rootProject.projectDir}/gradle/publish-maven.gradle"
 	apply plugin: 'eclipse'
 	apply plugin: 'idea'
-	apply plugin: 'jacoco'
 	apply plugin: 'checkstyle'
 	apply plugin: 'kotlin'
 	apply plugin: 'kotlin-spring'
@@ -140,9 +134,6 @@ configure(javaProjects) { subproject ->
 		withJavadocJar()
 		withSourcesJar()
 		registerFeature('optional') {
-			usingSourceSet(sourceSets.main)
-		}
-		registerFeature('provided') {
 			usingSourceSet(sourceSets.main)
 		}
 	}
@@ -164,10 +155,6 @@ configure(javaProjects) { subproject ->
 	}
 
 	eclipse.project.natures += 'org.springframework.ide.eclipse.core.springnature'
-
-	jacoco {
-		toolVersion = '0.8.10'
-	}
 
 	// dependencies that are common across all java projects
 	dependencies {
@@ -191,7 +178,7 @@ configure(javaProjects) { subproject ->
 	}
 
 	// enable all compiler warnings; individual projects may customize further
-	[compileJava, compileTestJava]*.options*.compilerArgs = ['-Xlint:all,-options']
+	[compileJava, compileTestJava]*.options*.compilerArgs = ['-Xlint:all,-options,-processing', '-parameters']
 
 	test {
 		testLogging {
@@ -203,51 +190,27 @@ configure(javaProjects) { subproject ->
 		}
 
 		maxHeapSize = '1536m'
-//		jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:8111'
-		jacoco {
-			destinationFile = file("$buildDir/jacoco.exec")
-		}
 		useJUnitPlatform()
 
 	}
 
 	checkstyle {
 		configDirectory.set(rootProject.file("src/checkstyle"))
-		toolVersion = '10.8.0'
+		toolVersion = '10.12.5'
 	}
-
-	jacocoTestReport {
-		onlyIf { System.properties['sonar.host.url'] }
-		dependsOn test
-		reports {
-			xml.required = true
-			csv.required = false
-			html.required = false
-		}
-	}
-
-	rootProject.tasks['sonarqube'].dependsOn jacocoTestReport
 
 	publishing {
 		publications {
 			mavenJava(MavenPublication) {
 				suppressAllPomMetadataWarnings()
 				from components.java
-				pom.withXml {
-					def pomDeps = asNode().dependencies.first()
-					subproject.configurations.providedImplementation.allDependencies.each { dep ->
-						pomDeps.remove(pomDeps.'*'.find { it.artifactId.text() == dep.name })
-					}
-				}
 			}
 		}
 	}
 
 	task updateCopyrights {
 		onlyIf { !isCI }
-		if (gitPresent) {
-			inputs.files(modifiedFiles.map(files -> files.filter { f -> f.path.contains(subproject.name) }))
-		}
+		inputs.files(modifiedFiles.filter { f -> f.path.contains(subproject.name) })
 		outputs.dir('build/classes')
 
 		doLast {
@@ -353,9 +316,7 @@ project ('spring-kafka') {
 		testImplementation ('io.micrometer:micrometer-tracing-integration-test') {
 			exclude group: "org.mockito"
 		}
-
 	}
-
 }
 
 project('spring-kafka-bom') {
@@ -380,10 +341,6 @@ project('spring-kafka-bom') {
 				from components.javaPlatform
 			}
 		}
-	}
-
-	sonarqube {
-		skipProject = true
 	}
 }
 
@@ -438,21 +395,6 @@ project ('spring-kafka-docs') {
 		kotlinOptions {
 			jvmTarget = '17'
 		}
-	}
-
-	sonarqube {
-		skipProject = true
-	}
-
-}
-
-sonarqube {
-	properties {
-		property 'sonar.links.homepage', linkHomepage
-		property 'sonar.links.ci', linkCi
-		property 'sonar.links.issue', linkIssue
-		property 'sonar.links.scm', linkScmUrl
-		property 'sonar.links.scm_dev', linkScmDevConnection
 	}
 }
 

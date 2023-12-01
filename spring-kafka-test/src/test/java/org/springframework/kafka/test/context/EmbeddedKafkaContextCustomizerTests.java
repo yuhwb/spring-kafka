@@ -27,7 +27,6 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 
-
 /**
  * @author Oleg Artyomov
  * @author Sergio Lourenco
@@ -96,22 +95,22 @@ public class EmbeddedKafkaContextCustomizerTests {
 
 
 	@EmbeddedKafka(kraft = false)
-	private class TestWithEmbeddedKafka {
+	private static final class TestWithEmbeddedKafka {
 
 	}
 
 	@EmbeddedKafka(kraft = false)
-	private class SecondTestWithEmbeddedKafka {
+	private static final class SecondTestWithEmbeddedKafka {
 
 	}
 
 	@EmbeddedKafka(kraft = false, ports = 8085, bootstrapServersProperty = "my.bss.prop")
-	private class TestWithEmbeddedKafkaPorts {
+	private static final class TestWithEmbeddedKafkaPorts {
 
 	}
 
 	@EmbeddedKafka(kraft = false, count = 2)
-	private class TestWithEmbeddedKafkaMulti {
+	private static final class TestWithEmbeddedKafkaMulti {
 
 	}
 
