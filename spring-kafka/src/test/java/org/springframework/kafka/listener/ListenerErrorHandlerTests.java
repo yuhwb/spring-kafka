@@ -87,7 +87,7 @@ public class ListenerErrorHandlerTests {
 		verify(ack).acknowledge();
 	}
 
-	private static class TestListener {
+	private static final class TestListener {
 
 		void test1(String foo, Acknowledgment ack) {
 		}

@@ -26,7 +26,7 @@ import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @SuppressWarnings("serial")
-public class ResourcelessTransactionManager extends AbstractPlatformTransactionManager {
+public final class ResourcelessTransactionManager extends AbstractPlatformTransactionManager {
 
 	@Override
 	public void doBegin(Object transaction, TransactionDefinition definition) throws TransactionException {

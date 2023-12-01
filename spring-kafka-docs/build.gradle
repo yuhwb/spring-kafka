@@ -4,23 +4,25 @@ plugins {
 }
 
 apply from: "${rootDir}/gradle/docs.gradle"
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'checkstyle'
+apply plugin: 'kotlin'
+apply plugin: 'kotlin-spring'
 
-jar {
-    enabled = false
+description = 'Spring Kafka Code Snippets For Docs'
+
+dependencies {
+    implementation "org.springframework.boot:spring-boot-starter:$springBootVersion"
+    implementation project (':spring-kafka')
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib'
+    implementation 'com.fasterxml.jackson.core:jackson-core'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
 }
 
-sourcesJar {
-    enabled = false
-}
-
-javadocJar {
-    enabled = false
-}
-
-publishMavenJavaPublicationToMavenLocal {
-    enabled = false
-}
-
-if (tasks.findByName('artifactoryPublish')) {
-    artifactoryPublish.skip = true
+project.afterEvaluate {
+    if (tasks.findByName('artifactoryPublish')) {
+        project.tasks.artifactoryPublish.enabled(false)
+    }
 }
