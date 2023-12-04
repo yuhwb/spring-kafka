@@ -247,7 +247,7 @@ public class Application {
         Map<String, Object> configs = new HashMap<>(pf.getConfigurationProperties());
         configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
         DefaultKafkaProducerFactory<Object, Object> bytesPF = new DefaultKafkaProducerFactory<>(configs);
-        context.registerBean(DefaultKafkaProducerFactory.class, "bytesPF", bytesPF);
+        context.registerBean("bytesPF", DefaultKafkaProducerFactory.class, () -> bytesPF);
 
         Map<Pattern, ProducerFactory<Object, Object>> map = new LinkedHashMap<>();
         map.put(Pattern.compile("two"), bytesPF);
