@@ -1,4 +1,5 @@
-Spring for Apache Kafka [<img src="https://build.spring.io/plugins/servlet/wittified/build-status/SK-MAS">](https://build.spring.io/browse/SK-MAS)
+Spring for Apache Kafka
+[![Build Status](https://github.com/spring-projects/spring-kafka/actions/workflows/ci-snapshot.yml/badge.svg)](https://github.com/spring-projects/spring-kafka/actions/workflows/ci-snapshot.yml)
 [![Revved up by Gradle Enterprise](https://img.shields.io/badge/Revved%20up%20by-Gradle%20Enterprise-06A0CE?logo=Gradle&labelColor=02303A)](https://ge.spring.io/scans?search.rootProjectNames=spring-kafka)
 ==================
 
@@ -48,8 +49,7 @@ Once complete, you may then import the projects into Eclipse as usual:
 
  *File -> Import -> Existing projects into workspace*
 
-Browse to the *'spring-kafka'* root directory. All projects should import
-free of errors.
+Browse to the *'spring-kafka'* root directory. All projects should import free of errors.
 
 # Using IntelliJ IDEA
 
@@ -66,18 +66,20 @@ For more information, please visit the Spring Kafka website at:
 
 Here are some ways for you to get involved in the community:
 
-* Get involved with the Spring community on the Spring Community Forums.  Please help out on the [StackOverflow](https://stackoverflow.com/questions/tagged/spring-kafka) by responding to questions and joining the debate.
+* Get involved with the Spring community on the Spring Community Forums.  
+Please help out on the [StackOverflow](https://stackoverflow.com/questions/tagged/spring-kafka) by responding to questions and joining the debate.
 * Create [GitHub issues](https://github.com/spring-projects/spring-kafka/issues) for bugs and new features and comment and vote on the ones that you are interested in.
-* Github is for social coding: if you want to write code, we encourage contributions through pull requests from [forks of this repository](https://help.github.com/forking/).  If you want to contribute code this way, please reference a GitHub issue as well covering the specific issue you are addressing.
+* GitHub is for social coding: if you want to write code, we encourage contributions through pull requests from [forks of this repository](https://help.github.com/forking/).  
+If you want to contribute code this way, please reference a GitHub issue as well covering the specific issue you are addressing.
 * Watch for upcoming articles on Spring by [subscribing](https://www.springsource.org/node/feed) to springframework.org
 
 Before we accept a non-trivial patch or pull request we will need you to sign the [contributor's agreement](https://support.springsource.com/spring_committer_signup).
 Signing the contributor's agreement does not grant anyone commit rights to the main repository, but it does mean that we can accept your contributions, and you will get an author credit if we do.
- Active contributors might be asked to join the core team and given the ability to merge pull requests.
+Active contributors might be asked to join the core team and given the ability to merge pull requests.
 
 ## Code Conventions and Housekeeping
 None of these is essential for a pull request, but they will all help.
-  They can also be added after the original pull request but before a merge.
+They can also be added after the original pull request but before a merge.
 
 * Use the Spring Framework code format conventions (import `eclipse-code-formatter.xml` from the root of the project if you are using Eclipse).
 * Make sure all new `.java` files to have a simple Javadoc class comment with at least an `@author` tag identifying you, and preferably at least a paragraph on what the class is for.
