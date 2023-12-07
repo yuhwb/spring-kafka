@@ -419,7 +419,6 @@ task filterMetricsDocsContent(type: Copy) {
 asciidoctorPdf {
 	dependsOn prepareAsciidocBuild, filterMetricsDocsContent
 	baseDirFollowsSourceFile()
-	configurations 'asciidoctorExt'
 
 	asciidoctorj {
 		sourceDir "$buildDir/asciidoc"
@@ -597,5 +596,3 @@ publishing {
 		}
 	}
 }
-
-apply from: "${rootDir}/gradle/docs.gradle"
