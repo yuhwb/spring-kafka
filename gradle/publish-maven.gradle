@@ -1,5 +1,4 @@
 apply plugin: 'maven-publish'
-apply plugin: 'com.jfrog.artifactory'
 
 publishing {
 	publications {
@@ -28,16 +27,22 @@ publishing {
 				}
 				developers {
 					developer {
-						id = 'garyrussell'
-						name = 'Gary Russell'
-						email = 'grussell@vmware.com'
-						roles = ["project lead"]
+						id = 'sobychacko'
+						name = 'Soby Chacko'
+						email = 'soby.chacko@broadcom.com'
+						roles = ['project lead']
 					}
 					developer {
-						id = 'abilan'
+						id = 'garyrussell'
+						name = 'Gary Russell'
+						email = 'github@gprussell.net'
+						roles = ['project founder and project lead emeritus']
+					}
+					developer {
+						id = 'artembilan'
 						name = 'Artem Bilan'
-						email = 'abilan@vmware.com'
-						roles = ["contributor"]
+						email = 'artem.bilan@broadcom.com'
+						roles = ['contributor']
 					}
 				}
 				issueManagement {
@@ -55,9 +60,4 @@ publishing {
 			}
 		}
 	}
-}
-
-artifactoryPublish {
-	dependsOn build
-	publications(publishing.publications.mavenJava)
 }

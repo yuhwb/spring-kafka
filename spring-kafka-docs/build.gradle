@@ -1,16 +1,25 @@
-jar {
-    enabled = false
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'kotlin'
+apply plugin: 'kotlin-spring'
+
+description = 'Spring Kafka Docs module'
+
+dependencies {
+    implementation "org.springframework.boot:spring-boot-starter:$springBootVersion"
+    implementation project (':spring-kafka')
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib'
+    implementation 'com.fasterxml.jackson.core:jackson-core'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
 }
 
-sourcesJar {
-    enabled = false
+compileJava {
+    options.release = 17
 }
 
-javadocJar {
-    enabled = false
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 }
-
-publishMavenJavaPublicationToMavenLocal {
-    enabled = false
-}
-
