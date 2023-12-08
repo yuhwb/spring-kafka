@@ -33,6 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  * @author Gary Russell
  * @author Vladimir Loginov
+ *
  * @since 2.1.7
  *
  */

@@ -129,9 +129,13 @@ public class BatchListenerConversionTests {
 		assertThat(listener.received.size()).isGreaterThan(0);
 		assertThat(listener.received.get(0).getPayload()).isInstanceOf(Foo.class);
 		assertThat(listener.received.get(0).getPayload().getBar()).isEqualTo("bar");
-		assertThatNoException().isThrownBy(() -> this.template.send(
-				new GenericMessage<>(KafkaNull.INSTANCE, Collections.singletonMap(KafkaHeaders.TOPIC, topic))));
 		verify(admin, never()).clusterId();
+
+		assertThatNoException()
+				.isThrownBy(() ->
+						this.template.send(
+								new GenericMessage<>(KafkaNull.INSTANCE,
+										Collections.singletonMap(KafkaHeaders.TOPIC, topic))));
 	}
 
 	@Test

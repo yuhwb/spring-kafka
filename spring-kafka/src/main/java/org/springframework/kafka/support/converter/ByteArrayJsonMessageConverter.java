@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  * @author Gary Russell
  * @author Vladimir Loginov
+ *
  * @since 2.3
  *
  */
@@ -48,7 +49,7 @@ public class ByteArrayJsonMessageConverter extends JsonMessageConverter {
 		try {
 			return message.getPayload() instanceof KafkaNull
 					? null
-					:  getObjectMapper().writeValueAsBytes(message.getPayload());
+					: getObjectMapper().writeValueAsBytes(message.getPayload());
 		}
 		catch (JsonProcessingException e) {
 			throw new ConversionException("Failed to convert to JSON", message, e);
