@@ -17,6 +17,7 @@
 package org.springframework.kafka.annotation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -56,6 +57,7 @@ import org.springframework.kafka.listener.BatchListenerFailedException;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.kafka.support.KafkaNull;
 import org.springframework.kafka.support.converter.BatchMessagingMessageConverter;
 import org.springframework.kafka.support.converter.BytesJsonMessageConverter;
 import org.springframework.kafka.support.converter.ConversionException;
@@ -74,6 +76,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Vladimir Loginov
  *
  * @since 1.3.2
  *
@@ -126,6 +129,8 @@ public class BatchListenerConversionTests {
 		assertThat(listener.received.size()).isGreaterThan(0);
 		assertThat(listener.received.get(0).getPayload()).isInstanceOf(Foo.class);
 		assertThat(listener.received.get(0).getPayload().getBar()).isEqualTo("bar");
+		assertThatNoException().isThrownBy(() -> this.template.send(
+				new GenericMessage<>(KafkaNull.INSTANCE, Collections.singletonMap(KafkaHeaders.TOPIC, topic))));
 		verify(admin, never()).clusterId();
 	}
 
