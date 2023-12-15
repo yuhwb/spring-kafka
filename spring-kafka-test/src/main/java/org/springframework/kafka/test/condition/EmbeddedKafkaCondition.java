@@ -54,6 +54,7 @@ import org.springframework.util.StringUtils;
  * @author Artem Bilan
  * @author Pawel Lozinski
  * @author Adrian Chlebosz
+ * @author Michał Padula
  *
  * @since 2.3
  *
@@ -72,7 +73,7 @@ public class EmbeddedKafkaCondition implements ExecutionCondition, AfterAllCallb
 			return false;
 		}
 		else {
-			return parameterContext.getParameter().getType().equals(EmbeddedKafkaBroker.class);
+			return EmbeddedKafkaBroker.class.isAssignableFrom(parameterContext.getParameter().getType());
 		}
 	}
 
