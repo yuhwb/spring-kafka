@@ -28,6 +28,8 @@ import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import org.apache.commons.logging.LogFactory;
@@ -116,6 +118,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, ApplicationCo
 	private final ThreadLocal<Producer<K, V>> producers = new ThreadLocal<>();
 
 	private final Map<String, String> micrometerTags = new HashMap<>();
+
+	private final Lock clusterIdLock = new ReentrantLock();
 
 	private String beanName = "kafkaTemplate";
 
@@ -500,7 +504,15 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, ApplicationCo
 	@Nullable
 	private String clusterId() {
 		if (this.kafkaAdmin != null && this.clusterId == null) {
-			this.clusterId = this.kafkaAdmin.clusterId();
+			this.clusterIdLock.lock();
+			try {
+				if (this.clusterId == null) {
+					this.clusterId = this.kafkaAdmin.clusterId();
+				}
+			}
+			finally {
+				this.clusterIdLock.unlock();
+			}
 		}
 		return this.clusterId;
 	}
