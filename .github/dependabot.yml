@@ -21,3 +21,4 @@ updates:
          - "org.hibernate.validator:hibernate-validator"
          - "org.awaitility:awaitility"
          - "com.google.code.findbugs:jsr305"
+         - "org.springframework.boot*"
