@@ -13,7 +13,7 @@ jobs:
       contents: write
       issues: write
 
-    uses: artembilan/spring-github-workflows/.github/workflows/spring-finalize-release.yml@main
+    uses: spring-io/spring-github-workflows/.github/workflows/spring-finalize-release.yml@v1
     with:
       milestone: ${{ inputs.milestone }}
     secrets:
