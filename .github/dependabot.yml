@@ -23,3 +23,14 @@ updates:
          - "org.awaitility:awaitility"
          - "com.google.code.findbugs:jsr305"
          - "org.springframework.boot*"
+
+  - package-ecosystem: "maven"
+    directory: "/samples"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    labels: ["type: task"]
+    groups:
+      development-dependencies:
+        patterns:
+          - "*"
