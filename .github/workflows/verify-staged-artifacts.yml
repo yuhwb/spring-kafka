@@ -9,11 +9,11 @@ on:
         type: string
 
 jobs:
-  verify-staged-with-samples:
+  verify-staged-with-spring-integration:
     runs-on: ubuntu-latest
     steps:
 
-      - name: Checkout Samples Repo
+      - name: Checkout Spring Integration Repo
         uses: actions/checkout@v4
         with:
           repository: spring-projects/spring-integration
