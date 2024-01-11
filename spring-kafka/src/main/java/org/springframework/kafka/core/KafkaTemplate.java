@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2023 the original author or authors.
+ * Copyright 2015-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,7 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.converter.SmartMessageConverter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -102,7 +103,6 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Soby Chacko
  * @author Gurps Bassi
  */
-@SuppressWarnings("deprecation")
 public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, ApplicationContextAware, BeanNameAware,
 		ApplicationListener<ContextStoppedEvent>, DisposableBean, SmartInitializingSingleton {
 
@@ -226,7 +226,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, ApplicationCo
 		Assert.notNull(producerFactory, "'producerFactory' cannot be null");
 		this.autoFlush = autoFlush;
 		this.micrometerEnabled = KafkaUtils.MICROMETER_PRESENT;
-		this.customProducerFactory = configOverrides != null && configOverrides.size() > 0;
+		this.customProducerFactory = !CollectionUtils.isEmpty(configOverrides);
 		if (this.customProducerFactory) {
 			this.producerFactory = producerFactory.copyWithConfigurationOverride(configOverrides);
 		}
@@ -352,7 +352,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, ApplicationCo
 	}
 
 	/**
-	 * Set to false to disable micrometer timers, if micrometer is on the class path.
+	 * Set to {@code false} to disable micrometer timers, if micrometer is on the class path.
 	 * @param micrometerEnabled false to disable.
 	 * @since 2.5
 	 */
@@ -365,7 +365,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, ApplicationCo
 	 * @param tags the tags.
 	 * @since 2.5
 	 */
-	public void setMicrometerTags(Map<String, String> tags) {
+	public void setMicrometerTags(@Nullable Map<String, String> tags) {
 		if (tags != null) {
 			this.micrometerTags.putAll(tags);
 		}
