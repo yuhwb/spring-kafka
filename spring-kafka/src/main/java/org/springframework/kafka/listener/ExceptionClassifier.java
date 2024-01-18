@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 the original author or authors.
+ * Copyright 2021-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,7 +121,7 @@ public abstract class ExceptionClassifier extends KafkaExceptionLogLevelAware {
 	 * All others will be retried.
 	 * When calling this method, the defaults will not be applied.
 	 * @param classifications the classifications.
-	 * @param defaultValue whether or not to retry non-matching exceptions.
+	 * @param defaultValue whether to retry non-matching exceptions.
 	 * @see BinaryExceptionClassifier#BinaryExceptionClassifier(Map, boolean)
 	 * @see #addNotRetryableExceptions(Class...)
 	 */
@@ -219,6 +219,7 @@ public abstract class ExceptionClassifier extends KafkaExceptionLogLevelAware {
 	 * @author Gary Russell
 	 *
 	 */
+	@SuppressWarnings("serial")
 	private static final class ExtendedBinaryExceptionClassifier extends BinaryExceptionClassifier {
 
 		ExtendedBinaryExceptionClassifier(Map<Class<? extends Throwable>, Boolean> typeMap, boolean defaultValue) {
