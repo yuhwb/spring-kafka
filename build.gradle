@@ -89,6 +89,15 @@ allprojects {
 
 	apply plugin: 'io.spring.dependency-management'
 
+	repositories {
+		mavenCentral()
+		maven { url 'https://repo.spring.io/milestone' }
+		if (version.endsWith('SNAPSHOT')) {
+			maven { url 'https://repo.spring.io/snapshot' }
+		}
+//		maven { url 'https://repository.apache.org/content/groups/staging/' }
+	}
+
 	dependencyManagement {
 		resolutionStrategy {
 			cacheChangingModulesFor 0, 'seconds'
@@ -101,23 +110,13 @@ allprojects {
 		imports {
 			mavenBom "com.fasterxml.jackson:jackson-bom:$jacksonBomVersion"
 			mavenBom "org.junit:junit-bom:$junitJupiterVersion"
-			mavenBom "org.springframework:spring-framework-bom:$springVersion"
-			mavenBom "io.projectreactor:reactor-bom:$reactorVersion"
-			mavenBom "org.springframework.data:spring-data-bom:$springDataVersion"
 			mavenBom "io.micrometer:micrometer-bom:$micrometerVersion"
 			mavenBom "io.micrometer:micrometer-tracing-bom:$micrometerTracingVersion"
+			mavenBom "io.projectreactor:reactor-bom:$reactorVersion"
+			mavenBom "org.springframework.data:spring-data-bom:$springDataVersion"
+			mavenBom "org.springframework:spring-framework-bom:$springVersion"
 		}
 	}
-
-	repositories {
-		mavenCentral()
-		maven { url 'https://repo.spring.io/milestone' }
-		if (version.endsWith('SNAPSHOT')) {
-			maven { url 'https://repo.spring.io/snapshot' }
-		}
-//		maven { url 'https://repository.apache.org/content/groups/staging/' }
-	}
-
 }
 
 configure(javaProjects) { subproject ->
