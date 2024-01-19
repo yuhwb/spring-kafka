@@ -385,9 +385,9 @@ dependencies {
 }
 
 def observationInputDir = file('spring-kafka/src/main/java/org/springframework/kafka/support/micrometer').absolutePath
-def generatedDocsDir = file("$buildDir/docs/generated").absolutePath
+def generatedDocsDir = file('build/docs/generated').absolutePath
 
-task generateObservabilityDocs(type: JavaExec) {
+tasks.register('generateObservabilityDocs', JavaExec) {
 	mainClass = 'io.micrometer.docs.DocsGeneratorCommand'
 	inputs.dir(observationInputDir)
 	outputs.dir(generatedDocsDir)
@@ -395,7 +395,7 @@ task generateObservabilityDocs(type: JavaExec) {
 	args observationInputDir, /.+/, generatedDocsDir
 }
 
-task filterMetricsDocsContent(type: Copy) {
+tasks.register('filterMetricsDocsContent', Copy) {
 	dependsOn generateObservabilityDocs
 	from generatedDocsDir
 	include '_*.adoc'
@@ -404,7 +404,7 @@ task filterMetricsDocsContent(type: Copy) {
 	filter { line -> line.replaceAll('org.springframework.kafka.support.micrometer.', '').replaceAll('^Fully qualified n', 'N') }
 }
 
-task api(type: Javadoc) {
+tasks.register('api', Javadoc) {
 	group = 'Documentation'
 	description = 'Generates aggregated Javadoc API documentation.'
 	title = "${rootProject.description} ${version} API"
@@ -430,7 +430,7 @@ task api(type: Javadoc) {
 	destinationDir = file('build/api')
 }
 
-task docsZip(type: Zip) {
+tasks.register('docsZip', Zip) {
 	group = 'Distribution'
 	archiveClassifier = 'docs'
 	description = "Builds -${archiveClassifier} archive containing api and reference " +
@@ -445,7 +445,8 @@ task docsZip(type: Zip) {
 	}
 }
 
-task distZip(type: Zip, dependsOn: [docsZip]) {
+tasks.register('distZip', Zip) {
+	dependsOn 'docsZip'
 	group = 'Distribution'
 	archiveClassifier = 'dist'
 	description = "Builds -${archiveClassifier} archive, containing all jars and docs, " +
@@ -483,12 +484,8 @@ task distZip(type: Zip, dependsOn: [docsZip]) {
 
 }
 
-artifacts {
-	archives distZip
-	archives docsZip
-}
-
-task dist(dependsOn: assemble) {
+tasks.register('dist') {
+	dependsOn assemble
 	group = 'Distribution'
 	description = 'Builds -dist, -docs distribution archives.'
 }
