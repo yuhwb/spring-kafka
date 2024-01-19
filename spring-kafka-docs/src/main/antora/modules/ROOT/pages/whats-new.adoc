@@ -36,6 +36,11 @@ Rules for the redirection are set either via the `RetryableTopic.exceptionBasedD
 Custom DLTs are created automatically as well as other retry and dead-letter topics.
 See xref:retrytopic/features.adoc#exc-based-custom-dlt-routing[Routing of messages to custom DLTs based on thrown exceptions] for more information.
 
+[[x32-cp-ptm]]
+=== Deprecating ContainerProperties transactionManager property
+
+Deprecating the `transactionManager` property in `ContainerProperties` in favor of `KafkaAwareTransactionManager`,  a narrower type compared to the general `PlatformTransactionManager`. See xref:kafka/container-props.adoc#kafkaAwareTransactionManager[ContainerProperties] and xref:kafka/transactions.adoc#transaction-synchronization[Transaction Synchronization].
+
 [[x32-after-rollback-processing]]
 === After Rollback Processing
 
