@@ -427,10 +427,10 @@ task api(type: Javadoc) {
 	classpath = files(javaProjects.collect { project ->
 		project.sourceSets.main.compileClasspath
 	})
-	destinationDir = new File(buildDir, 'api')
+	destinationDir = file('build/api')
 }
 
-task docsZip(type: Zip, dependsOn: [':spring-kafka-docs:antora']) {
+task docsZip(type: Zip) {
 	group = 'Distribution'
 	archiveClassifier = 'docs'
 	description = "Builds -${archiveClassifier} archive containing api and reference " +
@@ -443,13 +443,9 @@ task docsZip(type: Zip, dependsOn: [':spring-kafka-docs:antora']) {
 	from(api) {
 		into 'api'
 	}
-
-	from ('spring-kafka-docs/build/site') {
-		into 'reference/'
-	}
 }
 
-task distZip(type: Zip, dependsOn: [docsZip]) { //, schemaZip]) {
+task distZip(type: Zip, dependsOn: [docsZip]) {
 	group = 'Distribution'
 	archiveClassifier = 'dist'
 	description = "Builds -${archiveClassifier} archive, containing all jars and docs, " +
