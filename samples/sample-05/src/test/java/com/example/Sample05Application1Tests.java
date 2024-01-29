@@ -29,7 +29,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 
 /**
- * This test is going to fail from IDE since there is no exposed {@code spring.embedded.kafka.brokers} system property.
+ * This test is going to fail from IDE since there is no exposed {@code spring.kafka.bootstrap-servers} system property.
  * Use Maven to run tests which enables global embedded Kafka broker via properties provided to Surefire plugin.
  */
 @ExtendWith(OutputCaptureExtension.class)

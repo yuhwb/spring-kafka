@@ -30,7 +30,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 
 /**
- * This test is going to fail from IDE since there is no exposed {@code spring.embedded.kafka.brokers} system property.
+ * This test is going to fail from IDE since there is no exposed {@code spring.kafka.bootstrap-servers} system property.
  * This test demonstrates that global embedded Kafka broker config for {@code auto.create.topics.enable=false}
  * is in an effect - the topic {@code nonExistingTopic} does not exist on the broker.
  * See {@code /resources/kafka-broker.properties} and Maven Surefire plugin configuration.
