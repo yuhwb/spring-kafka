@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 the original author or authors.
+ * Copyright 2018-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,10 @@
 
 package org.springframework.kafka.retrytopic;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.springframework.classify.BinaryExceptionClassifier;
 import org.springframework.kafka.core.KafkaOperations;
@@ -36,6 +35,7 @@ import org.springframework.util.StringUtils;
  * @author Tomaz Fernandes
  * @author Gary Russell
  * @author João Lima
+ * @author Wang Zhiyang
  * @since 2.7
  *
  */
@@ -47,19 +47,21 @@ public class DestinationTopicPropertiesFactory {
 
 	private final List<Long> backOffValues;
 
-	private final BinaryExceptionClassifier exceptionClassifier;
-
 	private final int numPartitions;
 
 	private final int maxAttempts;
 
+	private final boolean isSameIntervalReuse;
+
+	private final boolean isFixedDelay;
+
+	private final int retryTopicsAmount;
+
+	private final BiPredicate<Integer, Throwable> shouldRetryOn;
+
 	private final KafkaOperations<?, ?> kafkaOperations;
 
 	private final DltStrategy dltStrategy;
-
-	private final TopicSuffixingStrategy topicSuffixingStrategy;
-
-	private final SameIntervalTopicReuseStrategy sameIntervalTopicReuseStrategy;
 
 	private final long timeout;
 
@@ -90,15 +92,19 @@ public class DestinationTopicPropertiesFactory {
 
 		this.dltStrategy = dltStrategy;
 		this.kafkaOperations = kafkaOperations;
-		this.exceptionClassifier = exceptionClassifier;
 		this.numPartitions = numPartitions;
-		this.topicSuffixingStrategy = topicSuffixingStrategy;
-		this.sameIntervalTopicReuseStrategy = sameIntervalTopicReuseStrategy;
 		this.timeout = timeout;
 		this.destinationTopicSuffixes = new DestinationTopicSuffixes(retryTopicSuffix, dltSuffix);
 		this.backOffValues = backOffValues;
-		// Max Attempts include the initial try.
-		this.maxAttempts = this.backOffValues.size() + 1;
+		int backOffValuesSize = this.backOffValues.size();
+		this.isSameIntervalReuse = SameIntervalTopicReuseStrategy.SINGLE_TOPIC.equals(sameIntervalTopicReuseStrategy);
+		this.isFixedDelay = TopicSuffixingStrategy.SUFFIX_WITH_INDEX_VALUE.equals(topicSuffixingStrategy)
+				|| backOffValuesSize > 1 && backOffValues.stream().distinct().count() == 1;
+		// Max Attempts to include the initial try.
+		this.maxAttempts = backOffValuesSize + 1;
+		this.shouldRetryOn = (attempt, throwable) -> attempt < this.maxAttempts
+				&& exceptionClassifier.classify(throwable);
+		this.retryTopicsAmount = backOffValuesSize - reusableTopicAttempts();
 	}
 
 	/**
@@ -113,71 +119,20 @@ public class DestinationTopicPropertiesFactory {
 	}
 
 	public List<DestinationTopic.Properties> createProperties() {
-		return isSingleTopicFixedDelay()
-				? createPropertiesForFixedDelaySingleTopic()
-				: createPropertiesForDefaultTopicStrategy();
-	}
-
-	private List<DestinationTopic.Properties> createPropertiesForFixedDelaySingleTopic() {
-		return isNoDltStrategy()
-					? Arrays.asList(createMainTopicProperties(),
-							createRetryProperties(1, getShouldRetryOn()))
-					: Arrays.asList(createMainTopicProperties(),
-							createRetryProperties(1, getShouldRetryOn()),
-							createDltProperties());
-	}
-
-	private boolean isSingleTopicFixedDelay() {
-		return (this.backOffValues.size() == 1 || isFixedDelay()) && isSingleTopicSameIntervalTopicReuseStrategy();
-	}
-
-	private boolean isSingleTopicSameIntervalTopicReuseStrategy() {
-		return SameIntervalTopicReuseStrategy.SINGLE_TOPIC.equals(this.sameIntervalTopicReuseStrategy);
-	}
-
-	private List<DestinationTopic.Properties> createPropertiesForDefaultTopicStrategy() {
-
-		int retryTopicsAmount = retryTopicsAmount();
-
-		return IntStream.rangeClosed(0, isNoDltStrategy()
-												? retryTopicsAmount
-												: retryTopicsAmount + 1)
-												.mapToObj(this::createTopicProperties)
-												.collect(Collectors.toList());
-	}
-
-	int retryTopicsAmount() {
-		return this.backOffValues.size() - reusableTopicAttempts();
-	}
-
-	private int reusableTopicAttempts() {
-		return this.backOffValues.size() > 0
-				? !isFixedDelay()
-					? isSingleTopicSameIntervalTopicReuseStrategy()
-						// Assuming that duplicates are always in
-						//  the end of the list.
-						? amountOfDuplicates(this.backOffValues.get(this.backOffValues.size() - 1)) - 1
-						: 0
-					: 0
-				: 0;
-	}
-
-	private boolean isNoDltStrategy() {
-		return DltStrategy.NO_DLT.equals(this.dltStrategy);
-	}
-
-	private DestinationTopic.Properties createTopicProperties(int index) {
-		BiPredicate<Integer, Throwable> shouldRetryOn = getShouldRetryOn();
-		return index == 0
-				? createMainTopicProperties()
-				: (index <= this.retryTopicsAmount())
-					? createRetryProperties(index, shouldRetryOn)
-					: createDltProperties();
+		List<DestinationTopic.Properties> list = new ArrayList<>(this.retryTopicsAmount + 2);
+		list.add(createMainTopicProperties());
+		for (int backOffIndex = 0; backOffIndex < this.retryTopicsAmount; backOffIndex++) {
+			list.add(createRetryProperties(backOffIndex));
+		}
+		if (!DltStrategy.NO_DLT.equals(this.dltStrategy)) {
+			list.add(createDltProperties());
+		}
+		return Collections.unmodifiableList(list);
 	}
 
 	private DestinationTopic.Properties createMainTopicProperties() {
 		return new DestinationTopic.Properties(0, MAIN_TOPIC_SUFFIX, DestinationTopic.Type.MAIN, this.maxAttempts,
-				this.numPartitions, this.dltStrategy, this.kafkaOperations, getShouldRetryOn(), this.timeout);
+				this.numPartitions, this.dltStrategy, this.kafkaOperations, this.shouldRetryOn, this.timeout);
 	}
 
 	private DestinationTopic.Properties createDltProperties() {
@@ -186,49 +141,37 @@ public class DestinationTopicPropertiesFactory {
 				this.kafkaOperations, (a, e) -> false, this.timeout, this.autoStartDltHandler);
 	}
 
-	private BiPredicate<Integer, Throwable> getShouldRetryOn() {
-		return (attempt, throwable) -> attempt < this.maxAttempts && this.exceptionClassifier.classify(throwable);
+	private DestinationTopic.Properties createRetryProperties(int backOffIndex) {
+		long thisBackOffValue = this.backOffValues.get(backOffIndex);
+		return createProperties(thisBackOffValue, getTopicSuffix(backOffIndex, thisBackOffValue));
 	}
 
-	private DestinationTopic.Properties createRetryProperties(int index,
-			BiPredicate<Integer, Throwable> shouldRetryOn) {
-
-		int indexInBackoffValues = index - 1;
-		Long thisBackOffValue = this.backOffValues.get(indexInBackoffValues);
-		DestinationTopic.Type topicTypeToUse = isDelayWithReusedTopic(thisBackOffValue)
-				? Type.REUSABLE_RETRY_TOPIC
-				: Type.RETRY;
-		return createProperties(topicTypeToUse, shouldRetryOn, indexInBackoffValues,
-				getTopicSuffix(indexInBackoffValues, thisBackOffValue));
+	private String getTopicSuffix(int backOffIndex, long thisBackOffValue) {
+		if (this.isSameIntervalReuse && this.retryTopicsAmount == 1) {
+			return this.destinationTopicSuffixes.getRetrySuffix();
+		}
+		else if (this.isFixedDelay) {
+			return joinWithRetrySuffix(backOffIndex);
+		}
+		else {
+			String retrySuffix = joinWithRetrySuffix(thisBackOffValue);
+			if (!this.isSameIntervalReuse && hasDuplicates(thisBackOffValue)) {
+				return retrySuffix.concat("-" + (backOffIndex - this.backOffValues.indexOf(thisBackOffValue)));
+			}
+			return retrySuffix;
+		}
 	}
 
-	private String getTopicSuffix(int indexInBackoffValues, Long thisBackOffValue) {
-		return isSingleTopicFixedDelay()
-				? this.destinationTopicSuffixes.getRetrySuffix()
-				: isSuffixWithIndexStrategy() || isFixedDelay()
-					? joinWithRetrySuffix(indexInBackoffValues)
-					: hasDuplicates(thisBackOffValue)
-						? joinWithRetrySuffix(thisBackOffValue)
-							.concat(suffixForRepeatedInterval(indexInBackoffValues, thisBackOffValue))
-						: joinWithRetrySuffix(thisBackOffValue);
+	private DestinationTopic.Type getDestinationTopicType(Long backOffValue) {
+		return this.isSameIntervalReuse && hasDuplicates(backOffValue) ? Type.REUSABLE_RETRY_TOPIC : Type.RETRY;
 	}
 
-	private String suffixForRepeatedInterval(int indexInBackoffValues, Long thisBackOffValue) {
-		return isSingleTopicSameIntervalTopicReuseStrategy()
-				? ""
-				: "-" + getIndexInBackoffValues(indexInBackoffValues, thisBackOffValue);
-	}
-
-	private boolean isDelayWithReusedTopic(Long backoffValue) {
-		return hasDuplicates(backoffValue) && isSingleTopicSameIntervalTopicReuseStrategy();
-	}
-
-	private int getIndexInBackoffValues(int indexInBackoffValues, Long thisBackOffValue) {
-		return indexInBackoffValues - this.backOffValues.indexOf(thisBackOffValue);
-	}
-
-	private boolean isSuffixWithIndexStrategy() {
-		return TopicSuffixingStrategy.SUFFIX_WITH_INDEX_VALUE.equals(this.topicSuffixingStrategy);
+	private int reusableTopicAttempts() {
+		if (this.isSameIntervalReuse && this.backOffValues.size() > 1) {
+			// Assuming that duplicates are always at the end of the list.
+			return amountOfDuplicates(this.backOffValues.get(this.backOffValues.size() - 1)) - 1;
+		}
+		return 0;
 	}
 
 	private boolean hasDuplicates(Long thisBackOffValue) {
@@ -238,22 +181,14 @@ public class DestinationTopicPropertiesFactory {
 	private int amountOfDuplicates(Long thisBackOffValue) {
 		return Long.valueOf(this.backOffValues
 				.stream()
-				.filter(value -> value.equals(thisBackOffValue))
-				.count()).intValue();
+				.filter(thisBackOffValue::equals)
+				.count())
+				.intValue();
 	}
 
-	private DestinationTopic.Properties createProperties(DestinationTopic.Type topicType,
-														BiPredicate<Integer, Throwable> shouldRetryOn,
-														int indexInBackoffValues,
-														String suffix) {
-		return new DestinationTopic.Properties(this.backOffValues.get(indexInBackoffValues), suffix,
-				topicType, this.maxAttempts, this.numPartitions, this.dltStrategy,
-				this.kafkaOperations, shouldRetryOn, this.timeout);
-	}
-
-	private boolean isFixedDelay() {
-		// If all values are the same, such as in NoBackOffPolicy and FixedBackoffPolicy
-		return this.backOffValues.size() > 1 && this.backOffValues.stream().distinct().count() == 1;
+	private DestinationTopic.Properties createProperties(long delayMs, String suffix) {
+		return new DestinationTopic.Properties(delayMs, suffix, getDestinationTopicType(delayMs), this.maxAttempts,
+				this.numPartitions, this.dltStrategy, this.kafkaOperations, this.shouldRetryOn, this.timeout);
 	}
 
 	private String joinWithRetrySuffix(long parameter) {
