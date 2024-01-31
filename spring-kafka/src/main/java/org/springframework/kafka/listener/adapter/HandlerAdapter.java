@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2021 the original author or authors.
+ * Copyright 2015-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.kafka.listener.adapter;
 
+import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 
@@ -33,6 +34,8 @@ public class HandlerAdapter {
 
 	private final DelegatingInvocableHandler delegatingHandler;
 
+	private final boolean asyncReplies;
+
 	/**
 	 * Construct an instance with the provided method.
 	 * @param invokerHandlerMethod the method.
@@ -40,6 +43,7 @@ public class HandlerAdapter {
 	public HandlerAdapter(InvocableHandlerMethod invokerHandlerMethod) {
 		this.invokerHandlerMethod = invokerHandlerMethod;
 		this.delegatingHandler = null;
+		this.asyncReplies = AdapterUtils.isAsyncReply(invokerHandlerMethod.getMethod().getReturnType());
 	}
 
 	/**
@@ -49,6 +53,16 @@ public class HandlerAdapter {
 	public HandlerAdapter(DelegatingInvocableHandler delegatingHandler) {
 		this.invokerHandlerMethod = null;
 		this.delegatingHandler = delegatingHandler;
+		this.asyncReplies = delegatingHandler.isAsyncReplies();
+	}
+
+	/**
+	 * Return true if any handler method has an async reply type.
+	 * @return the asyncReply.
+	 * @since 3.2
+	 */
+	public boolean isAsyncReplies() {
+		return this.asyncReplies;
 	}
 
 	public Object invoke(Message<?> message, Object... providedArgs) throws Exception { //NOSONAR
@@ -83,6 +97,14 @@ public class HandlerAdapter {
 		else {
 			return this.delegatingHandler.getBean();
 		}
+	}
+
+	@Nullable
+	public InvocationResult getInvocationResultFor(Object result, @Nullable Object inboundPayload) {
+		if (this.delegatingHandler != null && inboundPayload != null) {
+			return this.delegatingHandler.getInvocationResultFor(result, inboundPayload);
+		}
+		return null;
 	}
 
 }

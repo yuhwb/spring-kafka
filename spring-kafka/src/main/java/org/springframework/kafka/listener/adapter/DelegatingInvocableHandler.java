@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 the original author or authors.
+ * Copyright 2016-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ import org.springframework.validation.Validator;
  * unambiguous.
  *
  * @author Gary Russell
+ * @author Wang Zhiyang
  *
  */
 public class DelegatingInvocableHandler {
@@ -86,6 +87,8 @@ public class DelegatingInvocableHandler {
 
 	private final PayloadValidator validator;
 
+	private final boolean asyncReplies;
+
 	/**
 	 * Construct an instance with the supplied handlers for the bean.
 	 * @param handlers the handlers.
@@ -116,6 +119,15 @@ public class DelegatingInvocableHandler {
 				? configurableListableBeanFactory
 				: null;
 		this.validator = validator == null ? null : new PayloadValidator(validator);
+		boolean asyncReplies = defaultHandler != null && isAsyncReply(defaultHandler);
+		for (InvocableHandlerMethod handlerMethod : handlers) {
+			asyncReplies |= isAsyncReply(handlerMethod);
+		}
+		this.asyncReplies = asyncReplies;
+	}
+
+	private boolean isAsyncReply(InvocableHandlerMethod method) {
+		return AdapterUtils.isAsyncReply(method.getMethod().getReturnType());
 	}
 
 	private void checkSpecial(@Nullable InvocableHandlerMethod handler) {
@@ -137,6 +149,15 @@ public class DelegatingInvocableHandler {
 	 */
 	public Object getBean() {
 		return this.bean;
+	}
+
+	/**
+	 * Return true if any handler method has an async reply type.
+	 * @return the asyncReply.
+	 * @since 3.2
+	 */
+	public boolean isAsyncReplies() {
+		return this.asyncReplies;
 	}
 
 	/**
@@ -314,6 +335,23 @@ public class DelegatingInvocableHandler {
 		return (methodParameter.getParameterAnnotations().length == 0
 				|| !methodParameter.hasParameterAnnotation(Header.class))
 				&& methodParameter.getParameterType().isAssignableFrom(payloadClass);
+	}
+
+	/**
+	 * Return the result of a method invocation by providing a result and payload.
+	 * @param result the result.
+	 * @param inboundPayload the payload.
+	 * @return the result of a method invocation.
+	 * @since 3.2
+	 */
+	@Nullable
+	public InvocationResult getInvocationResultFor(Object result, Object inboundPayload) {
+		InvocableHandlerMethod handler = findHandlerForPayload(inboundPayload.getClass());
+		if (handler != null) {
+			return new InvocationResult(result, this.handlerSendTo.get(handler),
+					this.handlerReturnsMessage.get(handler));
+		}
+		return null;
 	}
 
 	private static final class PayloadValidator extends PayloadMethodArgumentResolver {

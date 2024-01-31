@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 the original author or authors.
+ * Copyright 2020-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.kafka.listener.adapter;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -24,11 +26,15 @@ import org.springframework.expression.ParserContext;
 import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.lang.Nullable;
+import org.springframework.util.ClassUtils;
+
+import reactor.core.publisher.Mono;
 
 /**
  * Utilities for listener adapters.
  *
  * @author Gary Russell
+ * @author Wang Zhiyang
  * @since 2.5
  *
  */
@@ -39,6 +45,9 @@ public final class AdapterUtils {
 	 * @since 2.2.15
 	 */
 	public static final ParserContext PARSER_CONTEXT = new TemplateParserContext("!{", "}");
+
+	private static final boolean MONO_PRESENT =
+			ClassUtils.isPresent("reactor.core.publisher.Mono", AdapterUtils.class.getClassLoader());
 
 	private AdapterUtils() {
 	}
@@ -83,6 +92,36 @@ public final class AdapterUtils {
 	public static String getDefaultReplyTopicExpression() {
 		return PARSER_CONTEXT.getExpressionPrefix() + "source.headers['"
 				+ KafkaHeaders.REPLY_TOPIC + "']" + PARSER_CONTEXT.getExpressionSuffix();
+	}
+
+	/**
+	 * Return the true when return types are asynchronous.
+	 * @param  resultType {@code InvocableHandlerMethod} return type.
+	 * @return type is {@code Mono} or {@code CompletableFuture}.
+	 * @since 3.2
+	 */
+	public static boolean isAsyncReply(Class<?> resultType) {
+		return isMono(resultType) || isCompletableFuture(resultType);
+	}
+
+	/**
+	 * Return the true when type is {@code Mono}.
+	 * @param  resultType {@code InvocableHandlerMethod} return type.
+	 * @return type is {@code Mono}.
+	 * @since 3.2
+	 */
+	public static boolean isMono(Class<?> resultType) {
+		return MONO_PRESENT && Mono.class.isAssignableFrom(resultType);
+	}
+
+	/**
+	 * Return the true when type is {@code CompletableFuture}.
+	 * @param  resultType {@code InvocableHandlerMethod} return type.
+	 * @return type is {@code CompletableFuture}.
+	 * @since 3.2
+	 */
+	public static boolean isCompletableFuture(Class<?> resultType) {
+		return CompletableFuture.class.isAssignableFrom(resultType);
 	}
 
 }
