@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 the original author or authors.
+ * Copyright 2018-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import org.springframework.util.Assert;
  * @author Tomaz Fernandes
  * @author Gary Russell
  * @author Yvette Quinby
+ * @author Adrian Chlebosz
  * @since 2.7
  *
  */
@@ -97,8 +98,8 @@ public class DefaultDestinationTopicResolver extends ExceptionClassifier
 				: destinationTopicHolder.getSourceDestination().shouldRetryOn(attempt, maybeUnwrapException(e))
 						&& isNotFatalException(e)
 						&& !isPastTimout(originalTimestamp, destinationTopicHolder)
-					? resolveRetryDestination(destinationTopicHolder)
-					: getDltOrNoOpsDestination(mainListenerId, topic);
+					? resolveRetryDestination(mainListenerId, destinationTopicHolder, e)
+					: getDltOrNoOpsDestination(mainListenerId, topic, e);
 	}
 
 	private Boolean isNotFatalException(Exception e) {
@@ -128,10 +129,20 @@ public class DefaultDestinationTopicResolver extends ExceptionClassifier
 	}
 
 	@SuppressWarnings("deprecation")
-	private DestinationTopic resolveRetryDestination(DestinationTopicHolder destinationTopicHolder) {
-		return (destinationTopicHolder.getSourceDestination().isReusableRetryTopic())
-				? destinationTopicHolder.getSourceDestination()
-				: destinationTopicHolder.getNextDestination();
+	private DestinationTopic resolveRetryDestination(String mainListenerId, DestinationTopicHolder destinationTopicHolder, Exception e) {
+		if (destinationTopicHolder.getSourceDestination().isReusableRetryTopic()) {
+			return destinationTopicHolder.getSourceDestination();
+		}
+
+		if (isAlreadyDltDestination(destinationTopicHolder)) {
+			return getDltOrNoOpsDestination(mainListenerId, destinationTopicHolder.getSourceDestination().getDestinationName(), e);
+		}
+
+		return destinationTopicHolder.getNextDestination();
+	}
+
+	private static boolean isAlreadyDltDestination(DestinationTopicHolder destinationTopicHolder) {
+		return destinationTopicHolder.getNextDestination().isDltTopic();
 	}
 
 	@Override
@@ -142,20 +153,55 @@ public class DefaultDestinationTopicResolver extends ExceptionClassifier
 				() -> "No DestinationTopic found for " + mainListenerId + ":" + topic).getSourceDestination();
 	}
 
-	@Nullable
 	@Override
 	public DestinationTopic getDltFor(String mainListenerId, String topicName) {
-		DestinationTopic destination = getDltOrNoOpsDestination(mainListenerId, topicName);
+		return getDltFor(mainListenerId, topicName, null);
+	}
+
+	@Nullable
+	@Override
+	public DestinationTopic getDltFor(String mainListenerId, String topicName, Exception e) {
+		DestinationTopic destination = getDltOrNoOpsDestination(mainListenerId, topicName, e);
 		return destination.isNoOpsTopic()
 				? null
 				: destination;
 	}
 
-	private DestinationTopic getDltOrNoOpsDestination(String mainListenerId, String topic) {
+	private DestinationTopic getDltOrNoOpsDestination(String mainListenerId, String topic, Exception e) {
 		DestinationTopic destination = getNextDestinationTopicFor(mainListenerId, topic);
-		return destination.isDltTopic() || destination.isNoOpsTopic()
-				? destination
-				: getDltOrNoOpsDestination(mainListenerId, destination.getDestinationName());
+		return isMatchingDltTopic(destination, e) || destination.isNoOpsTopic() ?
+			destination :
+			getDltOrNoOpsDestination(mainListenerId, destination.getDestinationName(), e);
+	}
+
+	private static boolean isMatchingDltTopic(DestinationTopic destination, Exception e) {
+		if (!destination.isDltTopic()) {
+			return false;
+		}
+
+		boolean isDltIntendedForCurrentExc = destination.usedForExceptions().stream()
+			.anyMatch(excType -> isDirectExcOrCause(e, excType));
+		boolean isGenericPurposeDlt = destination.usedForExceptions().isEmpty();
+		return isDltIntendedForCurrentExc || isGenericPurposeDlt;
+	}
+
+	private static boolean isDirectExcOrCause(Exception e, Class<? extends Throwable> excType) {
+		if (e == null) {
+			return false;
+		}
+
+		Throwable toMatch = e;
+
+		boolean isMatched = excType.isInstance(toMatch);
+		while (!isMatched) {
+			toMatch = toMatch.getCause();
+			if (toMatch == null) {
+				return false;
+			}
+			isMatched = excType.isInstance(toMatch);
+		}
+
+		return isMatched;
 	}
 
 	@Override

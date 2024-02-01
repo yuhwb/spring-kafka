@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 the original author or authors.
+ * Copyright 2018-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,10 @@
 package org.springframework.kafka.retrytopic;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.springframework.classify.BinaryExceptionClassifier;
 import org.springframework.classify.BinaryExceptionClassifierBuilder;
@@ -41,6 +44,7 @@ import org.springframework.util.Assert;
  *
  * @author Tomaz Fernandes
  * @author Gary Russell
+ * @author Adrian Chlebosz
  * @since 2.7
  *
  */
@@ -66,6 +70,7 @@ public class RetryTopicConfigurationBuilder {
 
 	private RetryTopicConfiguration.TopicCreation topicCreationConfiguration = new RetryTopicConfiguration.TopicCreation();
 
+
 	private ConcurrentKafkaListenerContainerFactory<?, ?> listenerContainerFactory;
 
 	@Nullable
@@ -73,6 +78,8 @@ public class RetryTopicConfigurationBuilder {
 
 	@Nullable
 	private BinaryExceptionClassifierBuilder classifierBuilder;
+
+	private final Map<String, Set<Class<? extends Throwable>>> dltRoutingRules = new HashMap<>();
 
 	private DltStrategy dltStrategy = DltStrategy.ALWAYS_RETRY_ON_ERROR;
 
@@ -522,6 +529,20 @@ public class RetryTopicConfigurationBuilder {
 		return this.classifierBuilder;
 	}
 
+	/**
+	 * Configure to set DLT routing rules causing the message to be redirected to the custom
+	 * DLT when the configured exception has been thrown during message processing.
+	 * The cause of the originally thrown exception will be traversed in order to find the
+	 * match with the configured exceptions.
+	 * @param dltRoutingRules specification of custom DLT name extensions and exceptions which should be matched for them
+	 * @return the builder
+	 * @since 3.2.0
+	 */
+	public RetryTopicConfigurationBuilder dltRoutingRules(Map<String, Set<Class<? extends Throwable>>> dltRoutingRules) {
+		this.dltRoutingRules.putAll(dltRoutingRules);
+		return this;
+	}
+
 	/* ---------------- Configure KafkaListenerContainerFactory -------------- */
 	/**
 	 * Configure the container factory to use.
@@ -567,7 +588,7 @@ public class RetryTopicConfigurationBuilder {
 				new DestinationTopicPropertiesFactory(this.retryTopicSuffix, this.dltSuffix, backOffValues,
 						buildClassifier(), this.topicCreationConfiguration.getNumPartitions(),
 						sendToTopicKafkaTemplate, this.dltStrategy,
-						this.topicSuffixingStrategy, this.sameIntervalTopicReuseStrategy, this.timeout)
+					this.topicSuffixingStrategy, this.sameIntervalTopicReuseStrategy, this.timeout, this.dltRoutingRules)
 								.autoStartDltHandler(this.autoStartDltHandler)
 								.createProperties();
 		return new RetryTopicConfiguration(destinationTopicProperties,

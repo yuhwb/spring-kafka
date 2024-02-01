@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 the original author or authors.
+ * Copyright 2018-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package org.springframework.kafka.retrytopic;
 
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiPredicate;
 
 import org.springframework.kafka.core.KafkaOperations;
@@ -28,6 +30,7 @@ import org.springframework.lang.Nullable;
  *
  * @author Tomaz Fernandes
  * @author Gary Russell
+ * @author Adrian Chlebosz
  * @since 2.7
  *
  */
@@ -88,6 +91,10 @@ public class DestinationTopic {
 		return this.properties.shouldRetryOn.test(attempt, e);
 	}
 
+	public Set<Class<? extends Throwable>> usedForExceptions() {
+		return Collections.unmodifiableSet(this.properties.usedForExceptions);
+	}
+
 	@Override
 	public String toString() {
 		return "DestinationTopic{" +
@@ -137,9 +144,10 @@ public class DestinationTopic {
 
 		private final long timeout;
 
+		private final Set<Class<? extends Throwable>> usedForExceptions;
+
 		@Nullable
 		private final Boolean autoStartDltHandler;
-
 		/**
 		 * Create an instance with the provided properties with the DLT container starting
 		 * automatically (if the container factory is so configured).
@@ -160,7 +168,7 @@ public class DestinationTopic {
 						BiPredicate<Integer, Throwable> shouldRetryOn, long timeout) {
 
 			this(delayMs, suffix, type, maxAttempts, numPartitions, dltStrategy, kafkaOperations, shouldRetryOn,
-					timeout, null);
+					timeout, null, Collections.emptySet());
 		}
 
 		/**
@@ -173,7 +181,7 @@ public class DestinationTopic {
 		public Properties(Properties sourceProperties, String suffix, Type type) {
 			this(sourceProperties.delayMs, suffix, type, sourceProperties.maxAttempts, sourceProperties.numPartitions,
 					sourceProperties.dltStrategy, sourceProperties.kafkaOperations, sourceProperties.shouldRetryOn,
-					sourceProperties.timeout, null);
+					sourceProperties.timeout, null, Collections.emptySet());
 		}
 
 		/**
@@ -195,6 +203,31 @@ public class DestinationTopic {
 				DltStrategy dltStrategy,
 				KafkaOperations<?, ?> kafkaOperations,
 				BiPredicate<Integer, Throwable> shouldRetryOn, long timeout, @Nullable Boolean autoStartDltHandler) {
+			this(delayMs, suffix, type, maxAttempts, numPartitions, dltStrategy, kafkaOperations, shouldRetryOn,
+					timeout, autoStartDltHandler, Collections.emptySet());
+		}
+
+		/**
+		 * Create an instance with the provided properties.
+		 * @param delayMs the delay in ms.
+		 * @param suffix the suffix.
+		 * @param type the type.
+		 * @param maxAttempts the max attempts.
+		 * @param numPartitions the number of partitions.
+		 * @param dltStrategy the DLT strategy.
+		 * @param kafkaOperations the {@link KafkaOperations}.
+		 * @param shouldRetryOn the exception classifications.
+		 * @param timeout the timeout.
+		 * @param autoStartDltHandler whether or not to start the DLT handler.
+		 * @param usedForExceptions the exceptions which destination is intended for
+		 * @since 3.2
+		 */
+		public Properties(long delayMs, String suffix, Type type,
+				int maxAttempts, int numPartitions,
+				DltStrategy dltStrategy,
+				KafkaOperations<?, ?> kafkaOperations,
+				BiPredicate<Integer, Throwable> shouldRetryOn, long timeout, @Nullable Boolean autoStartDltHandler,
+				Set<Class<? extends Throwable>> usedForExceptions) {
 
 			this.delayMs = delayMs;
 			this.suffix = suffix;
@@ -206,6 +239,7 @@ public class DestinationTopic {
 			this.shouldRetryOn = shouldRetryOn;
 			this.timeout = timeout;
 			this.autoStartDltHandler = autoStartDltHandler;
+			this.usedForExceptions = usedForExceptions;
 		}
 
 		public boolean isDltTopic() {
@@ -237,6 +271,10 @@ public class DestinationTopic {
 		@Nullable
 		public Boolean autoStartDltHandler() {
 			return this.autoStartDltHandler;
+		}
+
+		public Set<Class<? extends Throwable>> usedForExceptions() {
+			return this.usedForExceptions;
 		}
 
 		@Override

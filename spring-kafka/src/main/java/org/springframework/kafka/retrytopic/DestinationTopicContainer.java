@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 the original author or authors.
+ * Copyright 2017-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.springframework.lang.Nullable;
  *
  * @author Tomaz Fernandes
  * @author Gary Russell
+ * @author Adrian Chlebosz
  * @since 2.7
  */
 public interface DestinationTopicContainer {
@@ -66,8 +67,23 @@ public interface DestinationTopicContainer {
 	 * @param mainListenerId the listener id.
 	 * @param topicName the topic name for which to look the DLT for
 	 * @return The {@link DestinationTopic} instance corresponding to the DLT.
+	 * @deprecated Replaced by {@link #getDltFor(String, String, Exception)}
 	 */
 	@Nullable
+	@Deprecated(since = "3.2", forRemoval = true)
 	DestinationTopic getDltFor(String mainListenerId, String topicName);
 
+	/**
+	 * Returns the {@link DestinationTopic} instance registered as
+	 * DLT for the given topic taking into consideration the exception
+	 * thrown, or null if none is found.
+	 * @param mainListenerId the listener id.
+	 * @param topicName the topic name for which to look the DLT for
+	 * @param exc the exception which is being handled
+	 * @return The {@link DestinationTopic} instance corresponding to the DLT.
+	 */
+	@Nullable
+	default DestinationTopic getDltFor(String mainListenerId, String topicName, Exception exc) {
+		return null;
+	}
 }

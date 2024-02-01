@@ -18,7 +18,11 @@ package org.springframework.kafka.retrytopic;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiPredicate;
 
 import org.springframework.classify.BinaryExceptionClassifier;
@@ -36,6 +40,7 @@ import org.springframework.util.StringUtils;
  * @author Gary Russell
  * @author João Lima
  * @author Wang Zhiyang
+ * @author Adrian Chlebosz
  * @since 2.7
  *
  */
@@ -65,6 +70,8 @@ public class DestinationTopicPropertiesFactory {
 
 	private final long timeout;
 
+	private final Map<String, Set<Class<? extends Throwable>>> dltRoutingRules;
+
 	@Nullable
 	private Boolean autoStartDltHandler;
 
@@ -90,11 +97,40 @@ public class DestinationTopicPropertiesFactory {
 			SameIntervalTopicReuseStrategy sameIntervalTopicReuseStrategy,
 			long timeout) {
 
+		this(retryTopicSuffix, dltSuffix, backOffValues, exceptionClassifier, numPartitions, kafkaOperations,
+				dltStrategy, topicSuffixingStrategy, sameIntervalTopicReuseStrategy, timeout, Collections.emptyMap());
+	}
+
+	/**
+	 * Construct an instance with the provided properties.
+	 * @param retryTopicSuffix the suffix.
+	 * @param dltSuffix the dlt suffix.
+	 * @param backOffValues the back off values.
+	 * @param exceptionClassifier the exception classifier.
+	 * @param numPartitions the number of partitions.
+	 * @param kafkaOperations the operations.
+	 * @param dltStrategy the dlt strategy.
+	 * @param topicSuffixingStrategy the topic suffixing strategy.
+	 * @param sameIntervalTopicReuseStrategy the same interval reuse strategy.
+	 * @param timeout the timeout.
+	 * @param dltRoutingRules the specification of which DLT should be used for the particular exception type
+	 * @since 3.2.0
+	 */
+	public DestinationTopicPropertiesFactory(String retryTopicSuffix, String dltSuffix, List<Long> backOffValues,
+			BinaryExceptionClassifier exceptionClassifier,
+			int numPartitions, KafkaOperations<?, ?> kafkaOperations,
+			DltStrategy dltStrategy,
+			TopicSuffixingStrategy topicSuffixingStrategy,
+			SameIntervalTopicReuseStrategy sameIntervalTopicReuseStrategy,
+			long timeout,
+			Map<String, Set<Class<? extends Throwable>>> dltRoutingRules) {
+
 		this.dltStrategy = dltStrategy;
 		this.kafkaOperations = kafkaOperations;
 		this.numPartitions = numPartitions;
 		this.timeout = timeout;
 		this.destinationTopicSuffixes = new DestinationTopicSuffixes(retryTopicSuffix, dltSuffix);
+		this.dltRoutingRules = copyDltRoutingRules(dltRoutingRules);
 		this.backOffValues = backOffValues;
 		int backOffValuesSize = this.backOffValues.size();
 		this.isSameIntervalReuse = SameIntervalTopicReuseStrategy.SINGLE_TOPIC.equals(sameIntervalTopicReuseStrategy);
@@ -105,6 +141,12 @@ public class DestinationTopicPropertiesFactory {
 		this.shouldRetryOn = (attempt, throwable) -> attempt < this.maxAttempts
 				&& exceptionClassifier.classify(throwable);
 		this.retryTopicsAmount = backOffValuesSize - reusableTopicAttempts();
+	}
+
+	private Map<String, Set<Class<? extends Throwable>>> copyDltRoutingRules(Map<String, Set<Class<? extends Throwable>>> dltRoutingRules) {
+		Map<String, Set<Class<? extends Throwable>>> copyOfDltRoutingRules = new HashMap<>();
+		dltRoutingRules.forEach((topicSuffix, exceptions) -> copyOfDltRoutingRules.put(topicSuffix, new HashSet<>(exceptions)));
+		return copyOfDltRoutingRules;
 	}
 
 	/**
@@ -125,6 +167,7 @@ public class DestinationTopicPropertiesFactory {
 			list.add(createRetryProperties(backOffIndex));
 		}
 		if (!DltStrategy.NO_DLT.equals(this.dltStrategy)) {
+			list.addAll(createCustomDltProperties());
 			list.add(createDltProperties());
 		}
 		return Collections.unmodifiableList(list);
@@ -138,7 +181,15 @@ public class DestinationTopicPropertiesFactory {
 	private DestinationTopic.Properties createDltProperties() {
 		return new DestinationTopic.Properties(0, this.destinationTopicSuffixes.getDltSuffix(),
 				DestinationTopic.Type.DLT, this.maxAttempts, this.numPartitions, this.dltStrategy,
-				this.kafkaOperations, (a, e) -> false, this.timeout, this.autoStartDltHandler);
+			this.kafkaOperations, (a, e) -> false, this.timeout, this.autoStartDltHandler, Collections.emptySet());
+	}
+
+	private List<DestinationTopic.Properties> createCustomDltProperties() {
+		return this.dltRoutingRules.entrySet().stream()
+			.map(entry -> new DestinationTopic.Properties(0, entry.getKey() + this.destinationTopicSuffixes.getDltSuffix(),
+				DestinationTopic.Type.DLT, this.maxAttempts, this.numPartitions, this.dltStrategy,
+				this.kafkaOperations, (a, e) -> false, this.timeout, this.autoStartDltHandler, entry.getValue()))
+			.toList();
 	}
 
 	private DestinationTopic.Properties createRetryProperties(int backOffIndex) {

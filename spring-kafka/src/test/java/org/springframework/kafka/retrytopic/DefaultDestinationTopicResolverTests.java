@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 the original author or authors.
+ * Copyright 2018-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,11 +39,13 @@ import org.springframework.kafka.listener.ListenerExecutionFailedException;
 import org.springframework.kafka.listener.TimestampedException;
 import org.springframework.kafka.retrytopic.DestinationTopic.Type;
 import org.springframework.kafka.support.converter.ConversionException;
+import org.springframework.kafka.support.serializer.DeserializationException;
 
 /**
  * @author Tomaz Fernandes
  * @author Yvette Quinby
  * @author Gary Russell
+ * @author Adrian Chlebosz
  * @since 2.7
  */
 @ExtendWith(MockitoExtension.class)
@@ -78,16 +80,16 @@ class DefaultDestinationTopicResolverTests extends DestinationTopicTests {
 	void shouldResolveRetryDestination() {
 		assertThat(defaultDestinationTopicContainer
 				.resolveDestinationTopic("id", mainDestinationTopic.getDestinationName(), 1,
-						new RuntimeException(), this.originalTimestamp)).isEqualTo(firstRetryDestinationTopic);
+					new IllegalStateException(), this.originalTimestamp)).isEqualTo(firstRetryDestinationTopic);
 		assertThat(defaultDestinationTopicContainer
 				.resolveDestinationTopic("id", firstRetryDestinationTopic.getDestinationName(), 1,
-						new RuntimeException(), this.originalTimestamp)).isEqualTo(secondRetryDestinationTopic);
+					new IllegalStateException(), this.originalTimestamp)).isEqualTo(secondRetryDestinationTopic);
 		assertThat(defaultDestinationTopicContainer
 				.resolveDestinationTopic("id", secondRetryDestinationTopic.getDestinationName(), 1,
-						new RuntimeException(), this.originalTimestamp)).isEqualTo(dltDestinationTopic);
+					new IllegalStateException(), this.originalTimestamp)).isEqualTo(dltDestinationTopic);
 		assertThat(defaultDestinationTopicContainer
 				.resolveDestinationTopic("id", dltDestinationTopic.getDestinationName(), 1,
-						new RuntimeException(), this.originalTimestamp)).isEqualTo(noOpsDestinationTopic);
+					new IllegalStateException(), this.originalTimestamp)).isEqualTo(noOpsDestinationTopic);
 
 		assertThat(defaultDestinationTopicContainer
 				.resolveDestinationTopic("id", mainDestinationTopic2.getDestinationName(), 1,
@@ -140,6 +142,19 @@ class DefaultDestinationTopicResolverTests extends DestinationTopicTests {
 				.resolveDestinationTopic("id", mainDestinationTopic.getDestinationName(),
 						1, new ConversionException("Test exception", new RuntimeException()), originalTimestamp))
 				.isEqualTo(dltDestinationTopic);
+	}
+
+	@Test
+	void shouldResolveDeserializationDltDestinationForDeserializationException() {
+		DeserializationException exc = new DeserializationException("", new byte[] {}, false, new IllegalStateException());
+		TimestampedException timestampedExc = new TimestampedException(exc);
+
+		assertThat(defaultDestinationTopicContainer
+			.resolveDestinationTopic("id", secondRetryDestinationTopic.getDestinationName(),
+				1, timestampedExc, originalTimestamp)).isEqualTo(deserializationExcDltDestinationTopic);
+		assertThat(defaultDestinationTopicContainer
+			.resolveDestinationTopic("id", deserializationExcDltDestinationTopic.getDestinationName(),
+				1, timestampedExc, originalTimestamp)).isEqualTo(dltDestinationTopic);
 	}
 
 	@Test
@@ -205,10 +220,24 @@ class DefaultDestinationTopicResolverTests extends DestinationTopicTests {
 	}
 
 	@Test
-	void shouldGetDlt() {
+	void shouldGetGeneralPurposeDltWhenExceptionIsNotKnown() {
 		assertThat(defaultDestinationTopicContainer
 				.getDltFor("id", mainDestinationTopic.getDestinationName()))
 				.isEqualTo(dltDestinationTopic);
+	}
+
+	@Test
+	void shouldGetGeneralPurposeDltWhenThereIsNoCustomDltRegisteredForExceptionType() {
+		assertThat(defaultDestinationTopicContainer
+				.getDltFor("id", mainDestinationTopic.getDestinationName(), new RuntimeException()))
+				.isEqualTo(dltDestinationTopic);
+	}
+
+	@Test
+	void shouldGetCustomDltWhenThereIsCustomDltRegisteredForExceptionType() {
+		assertThat(defaultDestinationTopicContainer
+				.getDltFor("id", mainDestinationTopic.getDestinationName(), new DeserializationException(null, null, false, null)))
+				.isEqualTo(deserializationExcDltDestinationTopic);
 	}
 
 	@Test

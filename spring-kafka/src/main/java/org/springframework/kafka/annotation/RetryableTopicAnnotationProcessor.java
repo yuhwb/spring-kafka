@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 the original author or authors.
+ * Copyright 2018-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanInitializationException;
@@ -34,6 +37,7 @@ import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.kafka.core.KafkaOperations;
+import org.springframework.kafka.retrytopic.ExceptionBasedDltDestination;
 import org.springframework.kafka.retrytopic.RetryTopicBeanNames;
 import org.springframework.kafka.retrytopic.RetryTopicConfiguration;
 import org.springframework.kafka.retrytopic.RetryTopicConfigurationBuilder;
@@ -58,6 +62,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Tomaz Fernandes
  * @author Gary Russell
+ * @author Adrian Chlebosz
  * @since 2.7
  *
  */
@@ -148,7 +153,8 @@ public class RetryableTopicAnnotationProcessor {
 				.autoStartDltHandler(autoStartDlt)
 				.setTopicSuffixingStrategy(annotation.topicSuffixingStrategy())
 				.sameIntervalTopicReuseStrategy(annotation.sameIntervalTopicReuseStrategy())
-				.timeoutAfter(timeout);
+				.timeoutAfter(timeout)
+				.dltRoutingRules(createDltRoutingSpecFromAnnotation(annotation.exceptionBasedDltRouting()));
 
 		Integer attempts = resolveExpressionAsInteger(annotation.attempts(), "attempts", true);
 		if (attempts != null) {
@@ -205,6 +211,11 @@ public class RetryableTopicAnnotationProcessor {
 			policy.setBackOffPeriod(min);
 		}
 		return policy;
+	}
+
+	private Map<String, Set<Class<? extends Throwable>>> createDltRoutingSpecFromAnnotation(ExceptionBasedDltDestination[] routingRules) {
+		return Arrays.stream(routingRules)
+			.collect(Collectors.toMap(ExceptionBasedDltDestination::suffix, excBasedDestDlt -> Set.of(excBasedDestDlt.exceptions())));
 	}
 
 	private EndpointHandlerMethod getDltProcessor(Method listenerMethod, Object bean) {
