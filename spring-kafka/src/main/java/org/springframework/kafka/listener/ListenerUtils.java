@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 the original author or authors.
+ * Copyright 2017-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.springframework.util.backoff.BackOffExecution;
  * @author Gary Russell
  * @author Francois Rosiere
  * @author Antonio Tomac
+ * @author Wang Zhiyang
  * @since 2.0
  *
  */
@@ -126,12 +127,7 @@ public final class ListenerUtils {
 			Map<Thread, Long> lastIntervals, MessageListenerContainer container) throws InterruptedException {
 
 		Thread currentThread = Thread.currentThread();
-		BackOffExecution backOffExecution = executions.get(currentThread);
-		if (backOffExecution == null) {
-			backOffExecution = backOff.start();
-			executions.put(currentThread, backOffExecution);
-		}
-		Long interval = backOffExecution.nextBackOff();
+		Long interval = nextBackOff(backOff, executions);
 		if (interval == BackOffExecution.STOP) {
 			interval = lastIntervals.get(currentThread);
 			if (interval == null) {
@@ -142,6 +138,17 @@ public final class ListenerUtils {
 		if (interval > 0) {
 			stoppableSleep(container, interval);
 		}
+	}
+
+	static long nextBackOff(BackOff backOff, Map<Thread, BackOffExecution> executions) {
+
+		Thread currentThread = Thread.currentThread();
+		BackOffExecution backOffExecution = executions.get(currentThread);
+		if (backOffExecution == null) {
+			backOffExecution = backOff.start();
+			executions.put(currentThread, backOffExecution);
+		}
+		return backOffExecution.nextBackOff();
 	}
 
 	/**

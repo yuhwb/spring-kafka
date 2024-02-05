@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 the original author or authors.
+ * Copyright 2018-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.kafka.listener;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,9 +25,11 @@ import java.util.function.BiConsumer;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
+import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaOperations;
 import org.springframework.kafka.listener.ContainerProperties.EOSMode;
 import org.springframework.lang.Nullable;
@@ -47,6 +50,7 @@ import org.springframework.util.backoff.BackOffExecution;
  *
  * @author Gary Russell
  * @author Francois Rosiere
+ * @author Wang Zhiyang
  *
  * @since 1.3.5
  *
@@ -60,7 +64,9 @@ public class DefaultAfterRollbackProcessor<K, V> extends FailedRecordProcessor
 
 	private final BackOff backOff;
 
-	private KafkaOperations<?, ?> kafkaTemplate;
+	private final KafkaOperations<?, ?> kafkaTemplate;
+
+	private final BiConsumer<ConsumerRecords<?, ?>, Exception> recoverer;
 
 	/**
 	 * Construct an instance with the default recoverer which simply logs the record after
@@ -143,6 +149,11 @@ public class DefaultAfterRollbackProcessor<K, V> extends FailedRecordProcessor
 		super.setCommitRecovered(commitRecovered);
 		checkConfig();
 		this.backOff = backOff;
+		this.recoverer = (crs, ex) -> {
+			if (recoverer != null && !crs.isEmpty()) {
+				crs.spliterator().forEachRemaining(rec -> recoverer.accept(rec, ex));
+			}
+		};
 	}
 
 	private void checkConfig() {
@@ -174,6 +185,53 @@ public class DefaultAfterRollbackProcessor<K, V> extends FailedRecordProcessor
 			}
 		}
 
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes"})
+	@Override
+	public void processBatch(ConsumerRecords<K, V> records, List<ConsumerRecord<K, V>> recordList, Consumer<K, V> consumer,
+			@Nullable MessageListenerContainer container, Exception exception, boolean recoverable, EOSMode eosMode) {
+
+		if (recoverable && isCommitRecovered()) {
+			long nextBackOff = ListenerUtils.nextBackOff(this.backOff, this.backOffs);
+			if (nextBackOff != BackOffExecution.STOP) {
+				SeekUtils.doSeeksToBegin((List) recordList, consumer, this.logger);
+				try {
+					ListenerUtils.stoppableSleep(container, nextBackOff);
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+				return;
+			}
+
+			try {
+				this.recoverer.accept(records, exception);
+				Map<TopicPartition, OffsetAndMetadata> offsets = new HashMap<>();
+				records.forEach(rec -> offsets.put(new TopicPartition(rec.topic(), rec.partition()),
+						ListenerUtils.createOffsetAndMetadata(container, rec.offset() + 1)));
+				if (offsets.size() > 0 && this.kafkaTemplate != null && this.kafkaTemplate.isTransactional()) {
+					this.kafkaTemplate.sendOffsetsToTransaction(offsets, consumer.groupMetadata());
+				}
+				clearThreadState();
+			}
+			catch (Exception ex) {
+				SeekUtils.doSeeksToBegin((List) recordList, consumer, this.logger);
+				logger.error(ex, "Recoverer threw an exception; re-seeking batch");
+				throw ex;
+			}
+			return;
+		}
+
+		try {
+			process(recordList, consumer, container, exception, false, eosMode);
+		}
+		catch (KafkaException ke) {
+			ke.selfLog("AfterRollbackProcessor threw an exception", this.logger);
+		}
+		catch (Exception ex) {
+			this.logger.error(ex, "AfterRollbackProcessor threw an exception");
+		}
 	}
 
 	@Override

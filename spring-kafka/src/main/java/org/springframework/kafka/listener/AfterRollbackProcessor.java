@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2021 the original author or authors.
+ * Copyright 2018-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 
 import org.springframework.kafka.listener.ContainerProperties.EOSMode;
 
@@ -34,6 +35,7 @@ import org.springframework.kafka.listener.ContainerProperties.EOSMode;
  * @param <V> the value type.
  *
  * @author Gary Russell
+ * @author Wang Zhiyang
  *
  * @since 1.3.5
  *
@@ -62,6 +64,26 @@ public interface AfterRollbackProcessor<K, V> {
 	 */
 	void process(List<ConsumerRecord<K, V>> records, Consumer<K, V> consumer,
 			MessageListenerContainer container, Exception exception, boolean recoverable, EOSMode eosMode);
+
+	/**
+	 * Process the entire batch of records.
+	 * Recoverable will be true if the container is processing entire batch of records;
+	 * @param records the records.
+	 * @param recordList the record list.
+	 * @param consumer the consumer.
+	 * @param container the container.
+	 * @param exception the exception
+	 * @param recoverable the recoverable.
+	 * @param eosMode the {@link EOSMode}.
+	 * @since 3.2
+	 * @see #isProcessInTransaction()
+	 */
+	default void processBatch(ConsumerRecords<K, V> records, List<ConsumerRecord<K, V>> recordList,
+			Consumer<K, V> consumer, MessageListenerContainer container, Exception exception,
+			boolean recoverable, ContainerProperties.EOSMode eosMode) {
+
+		process(recordList, consumer, container, exception, recoverable, eosMode);
+	}
 
 	/**
 	 * Optional method to clear thread state; will be called just before a consumer

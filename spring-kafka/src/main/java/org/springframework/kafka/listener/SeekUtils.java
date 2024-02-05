@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 the original author or authors.
+ * Copyright 2018-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import org.springframework.util.backoff.FixedBackOff;
  *
  * @author Gary Russell
  * @author Francois Rosiere
+ * @author Wang Zhiyang
  * @since 2.2
  *
  */
@@ -131,6 +132,24 @@ public final class SeekUtils {
 		});
 		seekPartitions(consumer, partitions, logger);
 		return skipped.get();
+	}
+
+	/**
+	 * Seek records to begin position, optionally skipping the first.
+	 * @param records the records.
+	 * @param consumer the consumer.
+	 * @param logger a {@link LogAccessor} for seek errors.
+	 * @since 3.2
+	 */
+	public static void doSeeksToBegin(List<ConsumerRecord<?, ?>> records, Consumer<?, ?> consumer,
+			LogAccessor logger) {
+
+		Map<TopicPartition, Long> partitions = new LinkedHashMap<>();
+		records.forEach(record -> {
+			partitions.computeIfAbsent(new TopicPartition(record.topic(), record.partition()),
+					offset -> record.offset());
+		});
+		seekPartitions(consumer, partitions, logger);
 	}
 
 	/**

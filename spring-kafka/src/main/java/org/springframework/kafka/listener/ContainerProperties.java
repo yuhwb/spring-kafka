@@ -51,6 +51,7 @@ import org.springframework.util.CollectionUtils;
  * @author Johnny Lim
  * @author Lukasz Kaminski
  * @author Kyuhyeok Park
+ * @author Wang Zhiyang
  */
 public class ContainerProperties extends ConsumerProperties {
 
@@ -257,6 +258,8 @@ public class ContainerProperties extends ConsumerProperties {
 	private double idleBeforeDataMultiplier = DEFAULT_IDLE_BEFORE_DATA_MULTIPLIER;
 
 	private PlatformTransactionManager transactionManager;
+
+	private boolean batchRecoverAfterRollback = false;
 
 	private int monitorInterval = DEFAULT_MONITOR_INTERVAL;
 
@@ -541,6 +544,24 @@ public class ContainerProperties extends ConsumerProperties {
 	 */
 	public void setTransactionManager(@Nullable PlatformTransactionManager transactionManager) {
 		this.transactionManager = transactionManager;
+	}
+
+	/**
+	 * Recover batch records after rollback if true.
+	 * @return true to recover.
+	 * @since 3.2
+	 */
+	public boolean isBatchRecoverAfterRollback() {
+		return this.batchRecoverAfterRollback;
+	}
+
+	/**
+	 * enable the batch recover after rollback.
+	 * @param batchRecoverAfterRollback the batchRecoverAfterRollback to set.
+	 * @since 3.2
+	 */
+	public void setBatchRecoverAfterRollback(boolean batchRecoverAfterRollback) {
+		this.batchRecoverAfterRollback = batchRecoverAfterRollback;
 	}
 
 	public int getMonitorInterval() {
