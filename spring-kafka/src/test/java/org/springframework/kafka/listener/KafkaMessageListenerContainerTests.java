@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 the original author or authors.
+ * Copyright 2016-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2536,6 +2536,35 @@ public class KafkaMessageListenerContainerTests {
 		assertThat(consumer.position(new TopicPartition(topic18, 1))).isEqualTo(2);
 		consumer.close();
 		logger.info("Stop rebalance after failed record");
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void enforceRabalanceOnTheConsumer() throws Exception {
+		ConsumerFactory<Integer, String> cf = mock(ConsumerFactory.class);
+		ContainerProperties containerProps = new ContainerProperties("enforce-rebalance-test-topic");
+		containerProps.setGroupId("grp");
+		containerProps.setAckMode(AckMode.RECORD);
+		containerProps.setClientId("clientId");
+		containerProps.setIdleBetweenPolls(10000L);
+
+		Consumer<Integer, String> consumer = mock(Consumer.class);
+		given(cf.createConsumer(eq("grp"), eq("clientId"), isNull(), any())).willReturn(consumer);
+
+		CountDownLatch enforceRebalanceLatch = new CountDownLatch(1);
+		containerProps.setMessageListener((MessageListener<Object, Object>) data -> {
+		});
+		KafkaMessageListenerContainer<Integer, String> container =
+				new KafkaMessageListenerContainer<>(cf, containerProps);
+		willAnswer(i -> {
+			enforceRebalanceLatch.countDown();
+			container.stop();
+			return null;
+		}).given(consumer).enforceRebalance(any());
+
+		container.start();
+		container.enforceRebalance();
+		assertThat(enforceRebalanceLatch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@SuppressWarnings({ "unchecked" })

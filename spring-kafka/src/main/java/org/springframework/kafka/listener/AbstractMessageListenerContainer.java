@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 the original author or authors.
+ * Copyright 2016-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -66,6 +67,7 @@ import org.springframework.util.StringUtils;
  * @author Marius Bogoevici
  * @author Artem Bilan
  * @author Tomaz Fernandes
+ * @author Soby Chacko
  */
 public abstract class AbstractMessageListenerContainer<K, V>
 		implements GenericMessageListenerContainer<K, V>, BeanNameAware, ApplicationEventPublisherAware,
@@ -89,6 +91,8 @@ public abstract class AbstractMessageListenerContainer<K, V>
 	private final ContainerProperties containerProperties;
 
 	protected final Object lifecycleMonitor = new Object(); // NOSONAR
+
+	protected final AtomicBoolean enforceRebalanceRequested = new AtomicBoolean();
 
 	private final Set<TopicPartition> pauseRequestedPartitions = ConcurrentHashMap.newKeySet();
 
@@ -137,6 +141,7 @@ public abstract class AbstractMessageListenerContainer<K, V>
 
 	@Nullable
 	private KafkaAdmin kafkaAdmin;
+
 
 	/**
 	 * Construct an instance with the provided factory and properties.
