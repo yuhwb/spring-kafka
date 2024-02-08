@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2023 the original author or authors.
+ * Copyright 2015-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -389,6 +389,20 @@ public class ConcurrentMessageListenerContainer<K, V> extends AbstractMessageLis
 				exec = new SimpleAsyncTaskExecutor(getListenerId() + ".authRestart");
 			}
 			exec.execute(() -> start());
+		}
+	}
+
+	@Override
+	public void enforceRebalance() {
+		this.lifecycleLock.lock();
+		try {
+			// Since the rebalance is for the whole consumer group, there is no need to
+			// initiate this operation for every single container in the group.
+			final KafkaMessageListenerContainer<K, V> listenerContainer = this.containers.get(0);
+			listenerContainer.enforceRebalance();
+		}
+		finally {
+			this.lifecycleLock.unlock();
 		}
 	}
 
