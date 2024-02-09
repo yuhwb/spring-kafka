@@ -486,7 +486,7 @@ task reference(dependsOn: asciidoctor) {
 
 reference.onlyIf { "$System.env.NO_REFERENCE_TASK" != 'true' || project.hasProperty('ignoreEnvToStopReference') }
 
-task api(type: Javadoc) {
+tasks.register('api', Javadoc) {
 	group = 'Documentation'
 	description = 'Generates aggregated Javadoc API documentation.'
 	title = "${rootProject.description} ${version} API"
@@ -509,10 +509,10 @@ task api(type: Javadoc) {
 	classpath = files(javaProjects.collect { project ->
 		project.sourceSets.main.compileClasspath
 	})
-	destinationDir = new File(buildDir, 'api')
+	destinationDir = file('build/api')
 }
 
-task docsZip(type: Zip, dependsOn: [reference]) {
+tasks.register('docsZip', Zip) {
 	group = 'Distribution'
 	archiveClassifier = 'docs'
 	description = "Builds -${archiveClassifier} archive containing api and reference " +
@@ -537,7 +537,8 @@ task docsZip(type: Zip, dependsOn: [reference]) {
 	}
 }
 
-task distZip(type: Zip, dependsOn: [docsZip]) { //, schemaZip]) {
+tasks.register('distZip', Zip) {
+	dependsOn 'docsZip'
 	group = 'Distribution'
 	archiveClassifier = 'dist'
 	description = "Builds -${archiveClassifier} archive, containing all jars and docs, " +
@@ -575,12 +576,8 @@ task distZip(type: Zip, dependsOn: [docsZip]) { //, schemaZip]) {
 
 }
 
-artifacts {
-	archives distZip
-	archives docsZip
-}
-
-task dist(dependsOn: assemble) {
+tasks.register('dist') {
+	dependsOn assemble
 	group = 'Distribution'
 	description = 'Builds -dist, -docs distribution archives.'
 }
