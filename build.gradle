@@ -103,11 +103,11 @@ allprojects {
 		imports {
 			mavenBom "com.fasterxml.jackson:jackson-bom:$jacksonBomVersion"
 			mavenBom "org.junit:junit-bom:$junitJupiterVersion"
-			mavenBom "org.springframework:spring-framework-bom:$springVersion"
-			mavenBom "io.projectreactor:reactor-bom:$reactorVersion"
-			mavenBom "org.springframework.data:spring-data-bom:$springDataVersion"
 			mavenBom "io.micrometer:micrometer-bom:$micrometerVersion"
 			mavenBom "io.micrometer:micrometer-tracing-bom:$micrometerTracingVersion"
+			mavenBom "io.projectreactor:reactor-bom:$reactorVersion"
+			mavenBom "org.springframework.data:spring-data-bom:$springDataVersion"
+			mavenBom "org.springframework:spring-framework-bom:$springVersion"
 		}
 	}
 
