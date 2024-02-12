@@ -7,6 +7,14 @@
 This section covers the changes made from version 3.1 to version 3.2.
 For changes in earlier version, see xref:appendix/change-history.adoc[Change History].
 
+[[x32-kafka-streams-iqs-support]]
+=== Kafka Streams Interactive Query Support
+
+A new API `KafkaStreamsInteractiveQuerySupport` for accessing queryable stores used in Kafka Streams interactive queries.
+See xref:streams.adoc#kafka-streams-iq-support[Kafka Streams Interactive Support] for more details.
+
+
+
 [[x32-tiss]]
 === TransactionIdSuffixStrategy
 
