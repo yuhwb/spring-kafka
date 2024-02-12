@@ -222,7 +222,7 @@ class DefaultDestinationTopicResolverTests extends DestinationTopicTests {
 	@Test
 	void shouldGetGeneralPurposeDltWhenExceptionIsNotKnown() {
 		assertThat(defaultDestinationTopicContainer
-				.getDltFor("id", mainDestinationTopic.getDestinationName()))
+				.getDltFor("id", mainDestinationTopic.getDestinationName(), null))
 				.isEqualTo(dltDestinationTopic);
 	}
 

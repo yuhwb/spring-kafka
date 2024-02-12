@@ -115,6 +115,7 @@ public abstract class MessagingMessageListenerAdapter<K, V> implements ConsumerS
 
 	private final KafkaListenerErrorHandler errorHandler;
 
+	@Nullable
 	private HandlerAdapter handlerMethod;
 
 	private boolean isConsumerRecordList;
@@ -216,7 +217,7 @@ public abstract class MessagingMessageListenerAdapter<K, V> implements ConsumerS
 	}
 
 	/**
-	 * Returns the inferred type for conversion or, if null, the
+	 * Return the inferred type for conversion or, if null, the
 	 * {@link #setFallbackType(Class) fallbackType}.
 	 * @return the type.
 	 */
@@ -245,7 +246,7 @@ public abstract class MessagingMessageListenerAdapter<K, V> implements ConsumerS
 	}
 
 	public boolean isAsyncReplies() {
-		return this.handlerMethod.isAsyncReplies();
+		return this.handlerMethod != null && this.handlerMethod.isAsyncReplies();
 	}
 
 	protected boolean isConsumerRecordList() {
@@ -262,7 +263,7 @@ public abstract class MessagingMessageListenerAdapter<K, V> implements ConsumerS
 
 	/**
 	 * Set the topic to which to send any result from the method invocation.
-	 * May be a SpEL expression {@code !{...}} evaluated at runtime.
+	 * Maybe a SpEL expression {@code !{...}} evaluated at runtime.
 	 * @param replyTopicParam the topic or expression.
 	 * @since 2.0
 	 */
@@ -334,7 +335,7 @@ public abstract class MessagingMessageListenerAdapter<K, V> implements ConsumerS
 	}
 
 	/**
-	 * Set to false to disable splitting {@link Iterable} reply values into separate
+	 * Set to {@code false} to disable splitting {@link Iterable} reply values into separate
 	 * records.
 	 * @param splitIterables false to disable; default true.
 	 * @since 2.3.5
@@ -406,6 +407,7 @@ public abstract class MessagingMessageListenerAdapter<K, V> implements ConsumerS
 		if (ack == null && this.noOpAck) {
 			ack = NO_OP_ACK;
 		}
+		Assert.notNull(this.handlerMethod, "the 'handlerMethod' must not be null");
 		try {
 			if (data instanceof List && !this.isConsumerRecordList) {
 				return this.handlerMethod.invoke(message, ack, consumer);
@@ -545,7 +547,9 @@ public abstract class MessagingMessageListenerAdapter<K, V> implements ConsumerS
 	 * @since 2.1.3
 	 */
 	@SuppressWarnings("unchecked")
-	protected void sendResponse(Object result, String topic, @Nullable Object source, boolean returnTypeMessage) {
+	protected void sendResponse(Object result, @Nullable String topic, @Nullable Object source,
+			boolean returnTypeMessage) {
+
 		if (!returnTypeMessage && topic == null) {
 			this.logger.debug(() -> "No replyTopic to handle the reply: " + result);
 		}
@@ -622,7 +626,7 @@ public abstract class MessagingMessageListenerAdapter<K, V> implements ConsumerS
 					})
 					.filter(e -> this.replyHeadersConfigurer.shouldCopy(e.getKey(), e.getValue()))
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-			if (headersToCopy.size() > 0) {
+			if (!headersToCopy.isEmpty()) {
 				builder.copyHeaders(headersToCopy);
 			}
 			headersToCopy = this.replyHeadersConfigurer.additionalHeaders();
@@ -637,7 +641,9 @@ public abstract class MessagingMessageListenerAdapter<K, V> implements ConsumerS
 		this.replyTemplate.send(builder.build());
 	}
 
-	protected void asyncSuccess(@Nullable Object result, String replyTopic, Message<?> source, boolean returnTypeMessage) {
+	protected void asyncSuccess(@Nullable Object result, String replyTopic, Message<?> source,
+			boolean returnTypeMessage) {
+
 		if (result == null) {
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("Async result is null, ignoring");

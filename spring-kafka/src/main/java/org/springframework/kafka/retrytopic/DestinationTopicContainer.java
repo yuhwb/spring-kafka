@@ -71,7 +71,9 @@ public interface DestinationTopicContainer {
 	 */
 	@Nullable
 	@Deprecated(since = "3.2", forRemoval = true)
-	DestinationTopic getDltFor(String mainListenerId, String topicName);
+	default DestinationTopic getDltFor(String mainListenerId, String topicName) {
+		return getDltFor(mainListenerId, topicName, null);
+	}
 
 	/**
 	 * Returns the {@link DestinationTopic} instance registered as

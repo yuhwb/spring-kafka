@@ -153,11 +153,6 @@ public class DefaultDestinationTopicResolver extends ExceptionClassifier
 				() -> "No DestinationTopic found for " + mainListenerId + ":" + topic).getSourceDestination();
 	}
 
-	@Override
-	public DestinationTopic getDltFor(String mainListenerId, String topicName) {
-		return getDltFor(mainListenerId, topicName, null);
-	}
-
 	@Nullable
 	@Override
 	public DestinationTopic getDltFor(String mainListenerId, String topicName, Exception e) {
