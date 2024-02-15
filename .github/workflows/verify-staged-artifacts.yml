@@ -18,6 +18,7 @@ jobs:
         with:
           repository: spring-projects/spring-integration
           show-progress: false
+          ref: 6.2.x
 
       - name: Set up JDK
         uses: actions/setup-java@v3
