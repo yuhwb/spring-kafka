@@ -485,11 +485,6 @@ task distZip(type: Zip, dependsOn: [docsZip]) { //, schemaZip]) {
 
 }
 
-artifacts {
-	archives distZip
-	archives docsZip
-}
-
 task dist(dependsOn: assemble) {
 	group = 'Distribution'
 	description = 'Builds -dist, -docs distribution archives.'
