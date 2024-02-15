@@ -46,7 +46,7 @@ class RetryingDeserializerTests {
 		AtomicInteger n = new AtomicInteger();
 		Deserializer<String> delegate =
 				(topic, data) -> {
-					if (n.incrementAndGet() < 2) {
+					if (n.incrementAndGet() < 3) {
 						throw new RuntimeException();
 					}
 					return new String(data);
