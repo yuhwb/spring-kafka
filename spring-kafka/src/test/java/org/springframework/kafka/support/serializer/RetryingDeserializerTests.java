@@ -17,6 +17,9 @@
 package org.springframework.kafka.support.serializer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -28,19 +31,20 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.utils.Utils;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.retry.RecoveryCallback;
+import org.springframework.retry.RetryContext;
 import org.springframework.retry.support.RetryTemplate;
 
 /**
  * @author Gary Russell
  * @author Wang Zhiyang
- *
+ * @author Soby Chacko
  * @since 2.3
- *
  */
-public class RetryingDeserializerTests {
+class RetryingDeserializerTests {
 
 	@Test
-	void testRetry() {
+	void basicRetryingDeserializer() {
 		Deser delegate = new Deser();
 		RetryingDeserializer<String> rdes = new RetryingDeserializer<>(delegate, new RetryTemplate());
 		assertThat(rdes.deserialize("foo", "bar".getBytes())).isEqualTo("bar");
@@ -52,6 +56,17 @@ public class RetryingDeserializerTests {
 		ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode("byteBuffer");
 		assertThat(rdes.deserialize("foo", new RecordHeaders(), byteBuffer)).isEqualTo("byteBuffer");
 		rdes.close();
+	}
+
+	@Test
+	void retryingDeserializerWithRecoveryCallback() throws Exception {
+		RetryingDeserializer<String> rdes = new RetryingDeserializer<>((s, b) -> {
+			throw new RuntimeException();
+		}, new RetryTemplate());
+		RecoveryCallback<String> recoveryCallback = mock();
+		rdes.setRecoveryCallback(recoveryCallback);
+		rdes.deserialize("my-topic", "my-data".getBytes());
+		verify(recoveryCallback).recover(any(RetryContext.class));
 	}
 
 	public static class Deser implements Deserializer<String> {
