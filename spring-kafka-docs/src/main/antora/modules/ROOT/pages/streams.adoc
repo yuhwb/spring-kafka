@@ -365,7 +365,7 @@ When calling this method, the user can specifially ask for the proper state stor
 
 NOTE: `KafkaStreamsInteractiveQueryService` API in Spring for Apache Kafka only supports providing access to local key-value stores at the moment.
 
-==== Retrying State Store Retrieval
+=== Retrying State Store Retrieval
 
 When trying to retrieve the state store using the `KafkaStreamsInteractiveQueryService`, there is a chance that the state store might not be found for various reasons.
 If those reasons are transitory, `KafkaStreamsInteractiveQueryService` provides an option to retry the retrieval of the state store by allowing to inject a custom `RetryTemplate`.
