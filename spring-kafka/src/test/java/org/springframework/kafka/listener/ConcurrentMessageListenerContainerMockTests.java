@@ -30,7 +30,6 @@ import static org.mockito.Mockito.verify;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -132,7 +131,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 		exec.destroy();
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked", "deprecation" })
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Test
 	void testCorrectContainerForConsumerError() throws InterruptedException {
 		ConsumerFactory consumerFactory = mock(ConsumerFactory.class);
@@ -202,10 +201,8 @@ public class ConcurrentMessageListenerContainerMockTests {
 				containerProperties);
 		CountDownLatch latch1 = new CountDownLatch(1);
 		CountDownLatch latch2 = new CountDownLatch(2);
-		AtomicReference<Long> eventTime = new AtomicReference<>();
 		container.setApplicationEventPublisher(event -> {
 			if (event instanceof ListenerContainerIdleEvent) {
-				eventTime.set(System.currentTimeMillis());
 				latch1.countDown();
 				latch2.countDown();
 			}
@@ -265,7 +262,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 		TopicPartition tp1 = new TopicPartition("foo", 1);
 		TopicPartition tp2 = new TopicPartition("foo", 2);
 		TopicPartition tp3 = new TopicPartition("foo", 3);
-		List<TopicPartition> assignments = Arrays.asList(tp0, tp1, tp2, tp3);
+		List<TopicPartition> assignments = List.of(tp0, tp1, tp2, tp3);
 		willAnswer(invocation -> {
 			((ConsumerRebalanceListener) invocation.getArgument(1))
 				.onPartitionsAssigned(assignments);
@@ -306,7 +303,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 		TopicPartition tp1 = new TopicPartition("foo", 1);
 		TopicPartition tp2 = new TopicPartition("foo", 2);
 		TopicPartition tp3 = new TopicPartition("foo", 3);
-		List<TopicPartition> assignments = Arrays.asList(tp0, tp1, tp2, tp3);
+		List<TopicPartition> assignments = List.of(tp0, tp1, tp2, tp3);
 		Map<TopicPartition, List<ConsumerRecord<String, String>>> recordMap = new HashMap<>();
 		recordMap.put(tp0, Collections.singletonList(new ConsumerRecord("foo", 0, 0, null, "bar")));
 		recordMap.put(tp1, Collections.singletonList(new ConsumerRecord("foo", 1, 0, null, "bar")));
@@ -365,7 +362,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 		TopicPartition tp1 = new TopicPartition("foo", 1);
 		TopicPartition tp2 = new TopicPartition("foo", 2);
 		TopicPartition tp3 = new TopicPartition("foo", 3);
-		List<TopicPartition> assignments = Arrays.asList(tp0, tp1, tp2, tp3);
+		List<TopicPartition> assignments = List.of(tp0, tp1, tp2, tp3);
 		willAnswer(invocation -> {
 			((ConsumerRebalanceListener) invocation.getArgument(1))
 				.onPartitionsAssigned(assignments);
@@ -412,7 +409,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 		TopicPartition tp1 = new TopicPartition("foo", 1);
 		TopicPartition tp2 = new TopicPartition("foo", 2);
 		TopicPartition tp3 = new TopicPartition("foo", 3);
-		List<TopicPartition> assignments = Arrays.asList(tp0, tp1, tp2, tp3);
+		List<TopicPartition> assignments = List.of(tp0, tp1, tp2, tp3);
 		Map<TopicPartition, List<ConsumerRecord<String, String>>> recordMap = new HashMap<>();
 		recordMap.put(tp0, Collections.singletonList(new ConsumerRecord("foo", 0, 0, null, "bar")));
 		recordMap.put(tp1, Collections.singletonList(new ConsumerRecord("foo", 1, 0, null, "bar")));
@@ -510,7 +507,9 @@ public class ConcurrentMessageListenerContainerMockTests {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	void testIntercept(boolean beforeTx, AssignmentCommitOption option, boolean batch) throws InterruptedException {
+	void testIntercept(boolean beforeTx, @Nullable AssignmentCommitOption option, boolean batch)
+			throws InterruptedException {
+
 		ConsumerFactory consumerFactory = mock(ConsumerFactory.class);
 		final Consumer consumer = mock(Consumer.class);
 		TopicPartition tp0 = new TopicPartition("foo", 0);
@@ -525,7 +524,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 			Thread.sleep(10);
 			return firstOrSecondPoll.incrementAndGet() < 3 ? records : empty;
 		}).given(consumer).poll(any());
-		List<TopicPartition> assignments = Arrays.asList(tp0);
+		List<TopicPartition> assignments = List.of(tp0);
 		willAnswer(invocation -> {
 			((ConsumerRebalanceListener) invocation.getArgument(1))
 				.onPartitionsAssigned(assignments);
@@ -678,7 +677,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 			Thread.sleep(10);
 			return firstOrSecondPoll.incrementAndGet() < 2 ? records : empty;
 		}).given(consumer).poll(any());
-		List<TopicPartition> assignments = Arrays.asList(tp0);
+		List<TopicPartition> assignments = List.of(tp0);
 		willAnswer(invocation -> {
 			((ConsumerRebalanceListener) invocation.getArgument(1))
 				.onPartitionsAssigned(assignments);
@@ -773,7 +772,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 			return records;
 		}).given(consumer).poll(any());
 		TopicPartition tp0 = new TopicPartition("foo", 0);
-		List<TopicPartition> assignments = Arrays.asList(tp0);
+		List<TopicPartition> assignments = List.of(tp0);
 		willAnswer(invocation -> {
 			((ConsumerRebalanceListener) invocation.getArgument(1))
 				.onPartitionsAssigned(assignments);
@@ -816,7 +815,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 			return records;
 		}).given(consumer).poll(any());
 		TopicPartition tp0 = new TopicPartition("foo", 0);
-		List<TopicPartition> assignments = Arrays.asList(tp0);
+		List<TopicPartition> assignments = List.of(tp0);
 		willAnswer(invocation -> {
 			((ConsumerRebalanceListener) invocation.getArgument(1))
 				.onPartitionsAssigned(assignments);
@@ -867,7 +866,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 			return null;
 		}).given(consumer).pause(any());
 		TopicPartition tp0 = new TopicPartition("foo", 0);
-		List<TopicPartition> assignments = Arrays.asList(tp0);
+		List<TopicPartition> assignments = List.of(tp0);
 		AtomicReference<ConsumerRebalanceListener> rebal = new AtomicReference<>();
 		willAnswer(invocation -> {
 			rebal.set(invocation.getArgument(1));
@@ -913,14 +912,14 @@ public class ConcurrentMessageListenerContainerMockTests {
 		TopicPartition tp1 = new TopicPartition("foo", 1);
 		TopicPartition tp2 = new TopicPartition("foo", 2);
 		TopicPartition tp3 = new TopicPartition("foo", 3);
-		List<TopicPartition> allAssignments = Arrays.asList(tp0, tp1, tp2, tp3);
+		List<TopicPartition> allAssignments = List.of(tp0, tp1, tp2, tp3);
 		Map<TopicPartition, List<ConsumerRecord<String, String>>> allRecordMap = new HashMap<>();
 		allRecordMap.put(tp0, Collections.singletonList(new ConsumerRecord("foo", 0, 0, null, "bar")));
 		allRecordMap.put(tp1, Collections.singletonList(new ConsumerRecord("foo", 1, 0, null, "bar")));
 		allRecordMap.put(tp2, Collections.singletonList(new ConsumerRecord("foo", 2, 0, null, "bar")));
 		allRecordMap.put(tp3, Collections.singletonList(new ConsumerRecord("foo", 3, 0, null, "bar")));
 		ConsumerRecords allRecords = new ConsumerRecords<>(allRecordMap);
-		List<TopicPartition> afterRevokeAssignments = Arrays.asList(tp1, tp3);
+		List<TopicPartition> afterRevokeAssignments = List.of(tp1, tp3);
 		Map<TopicPartition, List<ConsumerRecord<String, String>>> afterRevokeRecordMap = new HashMap<>();
 		afterRevokeRecordMap.put(tp1, Collections.singletonList(new ConsumerRecord("foo", 1, 0, null, "bar")));
 		afterRevokeRecordMap.put(tp3, Collections.singletonList(new ConsumerRecord("foo", 3, 0, null, "bar")));
@@ -981,10 +980,11 @@ public class ConcurrentMessageListenerContainerMockTests {
 			Thread.sleep(50);
 			pollLatch.countDown();
 			switch (pollPhase.getAndIncrement()) {
-				case 0:
+				case 0 -> {
 					rebal.get().onPartitionsAssigned(allAssignments);
 					return allRecords;
-				case 1:
+				}
+				case 1 -> {
 					rebal.get().onPartitionsRevoked(allAssignments);
 					rebal.get().onPartitionsAssigned(afterRevokeAssignments);
 					rebalLatch.countDown();
@@ -993,11 +993,13 @@ public class ConcurrentMessageListenerContainerMockTests {
 						return ConsumerRecords.empty();
 					}
 					return afterRevokeRecords;
-				default:
+				}
+				default -> {
 					if (paused.get()) {
 						return ConsumerRecords.empty();
 					}
 					return afterRevokeRecords;
+				}
 			}
 		}).given(consumer).poll(any());
 		container.start();
@@ -1025,7 +1027,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 		TopicPartition tp1 = new TopicPartition("foo", 1);
 		TopicPartition tp2 = new TopicPartition("foo", 2);
 		TopicPartition tp3 = new TopicPartition("foo", 3);
-		List<TopicPartition> allAssignments = Arrays.asList(tp0, tp1, tp2, tp3);
+		List<TopicPartition> allAssignments = List.of(tp0, tp1, tp2, tp3);
 		Map<TopicPartition, List<ConsumerRecord<String, String>>> allRecordMap = new LinkedHashMap<>();
 		ConsumerRecord record0 = new ConsumerRecord("foo", 0, 0, null, "bar");
 		ConsumerRecord record1 = new ConsumerRecord("foo", 1, 0, null, "bar");
@@ -1034,7 +1036,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 		allRecordMap.put(tp2, Collections.singletonList(new ConsumerRecord("foo", 2, 0, null, "bar")));
 		allRecordMap.put(tp3, Collections.singletonList(new ConsumerRecord("foo", 3, 0, null, "bar")));
 		ConsumerRecords allRecords = new ConsumerRecords<>(allRecordMap);
-		List<TopicPartition> revokedAssignments = Arrays.asList(tp0, tp2);
+		List<TopicPartition> revokedAssignments = List.of(tp0, tp2);
 		AtomicInteger pollPhase = new AtomicInteger();
 
 		Consumer consumer = mock(Consumer.class);
@@ -1046,9 +1048,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 			return null;
 		}).given(consumer).subscribe(any(Collection.class), any());
 		CountDownLatch pauseLatch = new CountDownLatch(1);
-		AtomicBoolean paused = new AtomicBoolean();
 		willAnswer(inv -> {
-			paused.set(true);
 			pauseLatch.countDown();
 			return null;
 		}).given(consumer).pause(any());
@@ -1089,17 +1089,20 @@ public class ConcurrentMessageListenerContainerMockTests {
 			Thread.sleep(50);
 			pollLatch.countDown();
 			switch (pollPhase.getAndIncrement()) {
-				case 0:
+				case 0 -> {
 					rebal.get().onPartitionsAssigned(allAssignments);
 					return allRecords;
-				case 1:
+				}
+				case 1 -> {
 					rebal.get().onPartitionsRevoked(revokedAssignments);
 					rebal.get().onPartitionsAssigned(Collections.emptyList());
 					rebalLatch.countDown();
 					continueLatch.await(10, TimeUnit.SECONDS);
 					return ConsumerRecords.empty();
-				default:
+				}
+				default -> {
 					return ConsumerRecords.empty();
+				}
 			}
 		}).given(consumer).poll(any());
 		container.start();
@@ -1130,14 +1133,14 @@ public class ConcurrentMessageListenerContainerMockTests {
 	void pruneRevokedPartitionsFromPendingOutOfOrderCommitsLegacyAssignor() throws InterruptedException {
 		TopicPartition tp0 = new TopicPartition("foo", 0);
 		TopicPartition tp1 = new TopicPartition("foo", 1);
-		List<TopicPartition> allAssignments = Arrays.asList(tp0, tp1);
+		List<TopicPartition> allAssignments = List.of(tp0, tp1);
 		Map<TopicPartition, List<ConsumerRecord<String, String>>> allRecordMap = new HashMap<>();
 		allRecordMap.put(tp0,
 				List.of(new ConsumerRecord("foo", 0, 0, null, "bar"), new ConsumerRecord("foo", 0, 1, null, "bar")));
 		allRecordMap.put(tp1,
 				List.of(new ConsumerRecord("foo", 1, 0, null, "bar"), new ConsumerRecord("foo", 1, 1, null, "bar")));
 		ConsumerRecords allRecords = new ConsumerRecords<>(allRecordMap);
-		List<TopicPartition> afterRevokeAssignments = Arrays.asList(tp1);
+		List<TopicPartition> afterRevokeAssignments = List.of(tp1);
 		AtomicInteger pollPhase = new AtomicInteger();
 
 		Consumer consumer = mock(Consumer.class);
@@ -1149,9 +1152,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 			return null;
 		}).given(consumer).subscribe(any(Collection.class), any());
 		CountDownLatch pauseLatch = new CountDownLatch(1);
-		AtomicBoolean paused = new AtomicBoolean();
 		willAnswer(inv -> {
-			paused.set(true);
 			pauseLatch.countDown();
 			return null;
 		}).given(consumer).pause(any());
@@ -1173,17 +1174,20 @@ public class ConcurrentMessageListenerContainerMockTests {
 			Thread.sleep(50);
 			pollLatch.countDown();
 			switch (pollPhase.getAndIncrement()) {
-				case 0:
+				case 0 -> {
 					rebal.get().onPartitionsAssigned(allAssignments);
 					return allRecords;
-				case 1:
+				}
+				case 1 -> {
 					rebal.get().onPartitionsRevoked(allAssignments);
 					rebal.get().onPartitionsAssigned(afterRevokeAssignments);
 					rebalLatch.countDown();
 					continueLatch.await(10, TimeUnit.SECONDS);
 					return ConsumerRecords.empty();
-				default:
+				}
+				default -> {
 					return ConsumerRecords.empty();
+				}
 			}
 		}).given(consumer).poll(any());
 		container.start();
@@ -1208,14 +1212,13 @@ public class ConcurrentMessageListenerContainerMockTests {
 	void pruneRevokedPartitionsFromPendingOutOfOrderCommitsCoopAssignor() throws InterruptedException {
 		TopicPartition tp0 = new TopicPartition("foo", 0);
 		TopicPartition tp1 = new TopicPartition("foo", 1);
-		List<TopicPartition> allAssignments = Arrays.asList(tp0, tp1);
+		List<TopicPartition> allAssignments = List.of(tp0, tp1);
 		Map<TopicPartition, List<ConsumerRecord<String, String>>> allRecordMap = new HashMap<>();
 		allRecordMap.put(tp0,
 				List.of(new ConsumerRecord("foo", 0, 0, null, "bar"), new ConsumerRecord("foo", 0, 1, null, "bar")));
 		allRecordMap.put(tp1,
 				List.of(new ConsumerRecord("foo", 1, 0, null, "bar"), new ConsumerRecord("foo", 1, 1, null, "bar")));
 		ConsumerRecords allRecords = new ConsumerRecords<>(allRecordMap);
-		List<TopicPartition> afterRevokeAssignments = Arrays.asList(tp1);
 		AtomicInteger pollPhase = new AtomicInteger();
 
 		Consumer consumer = mock(Consumer.class);
@@ -1227,9 +1230,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 			return null;
 		}).given(consumer).subscribe(any(Collection.class), any());
 		CountDownLatch pauseLatch = new CountDownLatch(1);
-		AtomicBoolean paused = new AtomicBoolean();
 		willAnswer(inv -> {
-			paused.set(true);
 			pauseLatch.countDown();
 			return null;
 		}).given(consumer).pause(any());
@@ -1251,17 +1252,20 @@ public class ConcurrentMessageListenerContainerMockTests {
 			Thread.sleep(50);
 			pollLatch.countDown();
 			switch (pollPhase.getAndIncrement()) {
-				case 0:
+				case 0 -> {
 					rebal.get().onPartitionsAssigned(allAssignments);
 					return allRecords;
-				case 1:
+				}
+				case 1 -> {
 					rebal.get().onPartitionsRevoked(List.of(tp0));
 					rebal.get().onPartitionsAssigned(List.of(new TopicPartition("foo", 2)));
 					rebalLatch.countDown();
 					continueLatch.await(10, TimeUnit.SECONDS);
 					return ConsumerRecords.empty();
-				default:
+				}
+				default -> {
 					return ConsumerRecords.empty();
+				}
 			}
 		}).given(consumer).poll(any());
 		container.start();
@@ -1287,7 +1291,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 
 			@Override
 			public void onMessage(ConsumerRecord rec, @Nullable Acknowledgment ack) {
-				if (rec.offset() == 1) {
+				if (rec.offset() == 1 && ack != null) {
 					ack.acknowledge();
 				}
 			}
@@ -1301,7 +1305,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 
 	public static class TestMessageListener1 implements MessageListener<String, String>, ConsumerSeekAware {
 
-		private static ThreadLocal<ConsumerSeekCallback> callbacks = new ThreadLocal<>();
+		private static final ThreadLocal<ConsumerSeekCallback> callbacks = new ThreadLocal<>();
 
 		CountDownLatch latch = new CountDownLatch(1);
 
@@ -1337,7 +1341,7 @@ public class ConcurrentMessageListenerContainerMockTests {
 
 	public static class TestMessageListener2 implements MessageListener<String, String>, ConsumerSeekAware {
 
-		private static ThreadLocal<ConsumerSeekCallback> callbacks = new ThreadLocal<>();
+		private static final ThreadLocal<ConsumerSeekCallback> callbacks = new ThreadLocal<>();
 
 		CountDownLatch latch = new CountDownLatch(1);
 
