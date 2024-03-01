@@ -2768,7 +2768,6 @@ public class KafkaMessageListenerContainerTests {
 			rebal.get().onPartitionsAssigned(Set.of(tp0, tp1));
 			return null;
 		}).given(consumer).subscribe(eq(foos), any(ConsumerRebalanceListener.class));
-		final CountDownLatch resumeLatch = new CountDownLatch(1);
 		ContainerProperties containerProps = new ContainerProperties("foo");
 		containerProps.setGroupId("grp");
 		containerProps.setAckMode(AckMode.RECORD);
@@ -2779,7 +2778,6 @@ public class KafkaMessageListenerContainerTests {
 		KafkaMessageListenerContainer<Integer, String> container =
 				new KafkaMessageListenerContainer<>(cf, containerProps);
 		container.start();
-		InOrder inOrder = inOrder(consumer);
 		assertThat(firstPoll.await(10, TimeUnit.SECONDS)).isNotNull();
 		container.pausePartition(tp0);
 		container.pausePartition(tp1);
@@ -2810,7 +2808,6 @@ public class KafkaMessageListenerContainerTests {
 		ConsumerFactory<Integer, String> cf = mock(ConsumerFactory.class);
 		Consumer<Integer, String> consumer = mock(Consumer.class);
 		given(cf.createConsumer(eq("grp"), eq("clientId"), isNull(), any())).willReturn(consumer);
-		AtomicBoolean first = new AtomicBoolean(true);
 		TopicPartition tp0 = new TopicPartition("foo", 0);
 		TopicPartition tp1 = new TopicPartition("foo", 1);
 		given(consumer.assignment()).willReturn(Set.of(tp0, tp1));
@@ -3466,6 +3463,7 @@ public class KafkaMessageListenerContainerTests {
 		containerProps.setClientId("clientId");
 		containerProps.setMessageListener((MessageListener) msg -> { });
 		Properties consumerProps = new Properties();
+		containerProps.setMessageListener((MessageListener<?, ?>) msg -> { });
 		KafkaMessageListenerContainer<Integer, String> container =
 				new KafkaMessageListenerContainer<>(cf, containerProps);
 		container.start();
@@ -3609,7 +3607,6 @@ public class KafkaMessageListenerContainerTests {
 		}).given(consumer).subscribe(any(Collection.class), any(ConsumerRebalanceListener.class));
 		List<Map<TopicPartition, OffsetAndMetadata>> commits = new ArrayList<>();
 		AtomicBoolean firstCommit = new AtomicBoolean(true);
-		AtomicInteger commitCount = new AtomicInteger();
 		willAnswer(invoc -> {
 			commits.add(invoc.getArgument(0, Map.class));
 			if (!firstCommit.getAndSet(false)) {
@@ -3891,6 +3888,11 @@ public class KafkaMessageListenerContainerTests {
 			latch.countDown();
 			return null;
 		}).given(consumer).commitSync(any(), any());
+		CountDownLatch closeLatch = new CountDownLatch(1);
+		willAnswer(inv -> {
+			closeLatch.countDown();
+			return null;
+		}).given(consumer).close();
 		TopicPartitionOffset[] topicPartition = new TopicPartitionOffset[] {
 				new TopicPartitionOffset("foo", 0) };
 
@@ -3905,6 +3907,7 @@ public class KafkaMessageListenerContainerTests {
 			containerProps.setTransactionManager(mock(PlatformTransactionManager.class));
 		}
 
+		CountDownLatch afterRecordLatch = new CountDownLatch(2);
 		RecordInterceptor<Integer, String> recordInterceptor = spy(new RecordInterceptor<Integer, String>() {
 
 			@Override
@@ -3915,6 +3918,10 @@ public class KafkaMessageListenerContainerTests {
 				return null;
 			}
 
+			public void afterRecord(ConsumerRecord<Integer, String> record, Consumer<Integer, String> consumer) {
+				afterRecordLatch.countDown();
+			}
+
 		});
 
 		KafkaMessageListenerContainer<Integer, String> container =
@@ -3923,6 +3930,9 @@ public class KafkaMessageListenerContainerTests {
 		container.setInterceptBeforeTx(early);
 		container.start();
 		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(afterRecordLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		container.stop();
+		assertThat(closeLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
 		InOrder inOrder = inOrder(recordInterceptor, consumer);
 		inOrder.verify(recordInterceptor).setupThreadState(eq(consumer));
@@ -3949,7 +3959,7 @@ public class KafkaMessageListenerContainerTests {
 			inOrder.verify(consumer).commitSync(eq(Map.of(new TopicPartition("foo", 0), new OffsetAndMetadata(2L))),
 					any(Duration.class));
 		}
-		container.stop();
+		inOrder.verify(consumer).close();
 	}
 
 	@ParameterizedTest(name = "{index} testInvokeBatchInterceptorAllSkipped early intercept {0}")
