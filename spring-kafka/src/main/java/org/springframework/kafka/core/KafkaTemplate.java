@@ -982,6 +982,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, ApplicationCo
 		}
 	}
 
+	@SuppressWarnings("serial")
 	private static final class SkipAbortException extends RuntimeException {
 
 		SkipAbortException(Throwable cause) {
