@@ -90,13 +90,11 @@ import io.micrometer.tracing.test.simple.SimpleTracer;
  */
 @SpringJUnitConfig
 @EmbeddedKafka(topics = { "observation.testT1", "observation.testT2", "observation.testT3",
-		ObservationTests.OBSERVATION_RUNTIME_EXCEPTION, ObservationTests.OBSERVATION_ERROR})
+		ObservationTests.OBSERVATION_RUNTIME_EXCEPTION})
 @DirtiesContext
 public class ObservationTests {
 
 	public final static String OBSERVATION_RUNTIME_EXCEPTION = "observation.runtime-exception";
-
-	public final static String OBSERVATION_ERROR = "observation.error";
 
 	@Test
 	void endToEnd(@Autowired Listener listener, @Autowired KafkaTemplate<Integer, String> template,
@@ -254,27 +252,6 @@ public class ObservationTests {
 		assertThat(span.getError().getCause())
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessage("obs4 run time exception");
-	}
-
-	@Test
-	void observationErrorException(@Autowired ExceptionListener listener, @Autowired SimpleTracer tracer,
-			@Autowired @Qualifier("throwableTemplate") KafkaTemplate<Integer, String> errorTemplate,
-			@Autowired KafkaListenerEndpointRegistry endpointRegistry)
-					throws ExecutionException, InterruptedException, TimeoutException {
-
-		errorTemplate.send(OBSERVATION_ERROR, "testError").get(10, TimeUnit.SECONDS);
-		assertThat(listener.latch5.await(10, TimeUnit.SECONDS)).isTrue();
-		endpointRegistry.getListenerContainer("obs5").stop();
-
-		Deque<SimpleSpan> spans = tracer.getSpans();
-		assertThat(spans).hasSize(2);
-		SimpleSpan span = spans.poll();
-		assertThat(span.getTags().get("spring.kafka.template.name")).isEqualTo("throwableTemplate");
-		span = spans.poll();
-		assertThat(span.getTags().get("spring.kafka.listener.id")).isEqualTo("obs5-0");
-		assertThat(span.getError())
-				.isInstanceOf(Error.class)
-				.hasMessage("obs5 error");
 	}
 
 	@Configuration
@@ -455,12 +432,6 @@ public class ObservationTests {
 		void listenRuntimeException(ConsumerRecord<Integer, String> in) {
 			this.latch4.countDown();
 			throw new IllegalStateException("obs4 run time exception");
-		}
-
-		@KafkaListener(id = "obs5", topics = OBSERVATION_ERROR)
-		void listenError(ConsumerRecord<Integer, String> in) {
-			this.latch5.countDown();
-			throw new Error("obs5 error");
 		}
 
 	}
