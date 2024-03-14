@@ -55,6 +55,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
  *
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Soby Chacko
  *
  * @since 1.3
  *
@@ -322,6 +323,10 @@ public class DefaultKafkaHeaderMapper extends AbstractKafkaHeaderMapper {
 			}
 			else if (headerName.equals(KafkaHeaders.LISTENER_INFO) && matchesForInbound(headerName)) {
 				headers.put(headerName, new String(header.value(), getCharset()));
+			}
+			else if (headerName.equals(KafkaUtils.KEY_DESERIALIZER_EXCEPTION_HEADER) ||
+					headerName.equals(KafkaUtils.VALUE_DESERIALIZER_EXCEPTION_HEADER)) {
+				headers.put(headerName, header);
 			}
 			else if (!(headerName.equals(JSON_TYPES)) && matchesForInbound(headerName)) {
 				if (jsonTypes.containsKey(headerName)) {
