@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 the original author or authors.
+ * Copyright 2018-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,13 +36,33 @@ import org.springframework.util.ClassUtils;
  * Utility methods.
  *
  * @author Gary Russell
+ * @author Soby Chacko
  *
  * @since 2.2
  *
  */
 public final class KafkaUtils {
 
+	/**
+	 * Header name for deserialization exceptions.
+	 * @since 3.0.15
+	 */
+	public static final String DESERIALIZER_EXCEPTION_HEADER_PREFIX = "springDeserializerException";
+
+	/**
+	 * Header name for deserialization exceptions.
+	 * @since 3.0.15
+	 */
+	public static final String KEY_DESERIALIZER_EXCEPTION_HEADER = DESERIALIZER_EXCEPTION_HEADER_PREFIX + "Key";
+
+	/**
+	 * Header name for deserialization exceptions.
+	 * @since 3.0.15
+	 */
+	public static final String VALUE_DESERIALIZER_EXCEPTION_HEADER = DESERIALIZER_EXCEPTION_HEADER_PREFIX + "Value";
+
 	private static final ThreadLocal<Boolean> LOG_METADATA_ONLY = new ThreadLocal<>();
+
 
 	private static Function<ProducerRecord<?, ?>, String> prFormatter = ProducerRecord::toString;
 
