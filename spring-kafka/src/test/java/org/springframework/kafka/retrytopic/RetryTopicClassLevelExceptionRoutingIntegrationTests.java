@@ -275,24 +275,28 @@ class RetryTopicClassLevelExceptionRoutingIntegrationTests {
 
 	}
 
+	@SuppressWarnings("serial")
 	static class ShouldRetryOnlyByTopicException extends RuntimeException {
 		ShouldRetryOnlyByTopicException(String msg) {
 			super(msg);
 		}
 	}
 
+	@SuppressWarnings("serial")
 	static class ShouldSkipBothRetriesException extends RuntimeException {
 		ShouldSkipBothRetriesException(String msg) {
 			super(msg);
 		}
 	}
 
+	@SuppressWarnings("serial")
 	static class ShouldRetryOnlyBlockingException extends RuntimeException {
 		ShouldRetryOnlyBlockingException(String msg) {
 			super(msg);
 		}
 	}
 
+	@SuppressWarnings("serial")
 	static class ShouldRetryViaBothException extends RuntimeException {
 		ShouldRetryViaBothException(String msg) {
 			super(msg);

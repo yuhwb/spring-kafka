@@ -32,6 +32,7 @@ import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.core.log.LogAccessor;
@@ -175,7 +176,8 @@ public class DefaultKafkaHeaderMapperTests {
 		mapper.toHeaders(recordHeaders, receivedHeaders);
 		Object fooHeader = receivedHeaders.get("foo");
 		assertThat(fooHeader).isInstanceOf(List.class);
-		assertThat(fooHeader).asList().containsExactly("application/json", "text/plain");
+		assertThat(fooHeader).asInstanceOf(InstanceOfAssertFactories.LIST)
+				.containsExactly("application/json", "text/plain");
 	}
 
 	@Test
