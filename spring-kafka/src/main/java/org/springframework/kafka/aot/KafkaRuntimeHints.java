@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,6 +91,7 @@ import org.springframework.lang.Nullable;
  * {@link RuntimeHintsRegistrar} for Spring for Apache Kafka.
  *
  * @author Gary Russell
+ * @author Soby Chacko
  * @since 3.0
  *
  */
@@ -205,6 +206,8 @@ public class KafkaRuntimeHints implements RuntimeHintsRegistrar {
 				"org.apache.kafka.streams.processor.internals.assignment.HighAvailabilityTaskAssignor",
 				"org.apache.kafka.streams.processor.internals.assignment.StickyTaskAssignor",
 				"org.apache.kafka.streams.processor.internals.assignment.FallbackPriorTaskAssignor",
+				"org.apache.kafka.streams.state.BuiltInDslStoreSuppliers$RocksDBDslStoreSuppliers",
+				"org.apache.kafka.streams.state.BuiltInDslStoreSuppliers$InMemoryDslStoreSuppliers",
 				"org.apache.kafka.streams.errors.LogAndFailExceptionHandler")
 			.forEach(type -> reflectionHints.registerTypeIfPresent(classLoader, type, builder ->
 					builder.withMembers(MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS)));
