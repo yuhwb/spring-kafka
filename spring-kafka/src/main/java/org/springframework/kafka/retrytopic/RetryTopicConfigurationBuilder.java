@@ -72,7 +72,6 @@ public class RetryTopicConfigurationBuilder {
 
 	private RetryTopicConfiguration.TopicCreation topicCreationConfiguration = new RetryTopicConfiguration.TopicCreation();
 
-
 	private ConcurrentKafkaListenerContainerFactory<?, ?> listenerContainerFactory;
 
 	@Nullable
@@ -400,7 +399,6 @@ public class RetryTopicConfigurationBuilder {
 		this.backOffPolicy = backOffPolicy;
 		return this;
 	}
-
 
 	/**
 	 * Configure a {@link FixedBackOffPolicy}.

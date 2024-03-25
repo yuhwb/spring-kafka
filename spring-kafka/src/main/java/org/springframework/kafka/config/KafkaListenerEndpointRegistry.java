@@ -361,7 +361,6 @@ public class KafkaListenerEndpointRegistry implements ListenerContainerRegistry,
 		return listenerContainer;
 	}
 
-
 	@Override
 	public void destroy() {
 		for (MessageListenerContainer listenerContainer : getListenerContainers()) {
@@ -419,7 +418,6 @@ public class KafkaListenerEndpointRegistry implements ListenerContainerRegistry,
 		return this.running;
 	}
 
-
 	@Override
 	public void onApplicationEvent(ContextRefreshedEvent event) {
 		if (event.getApplicationContext().equals(this.applicationContext)) {
@@ -438,7 +436,6 @@ public class KafkaListenerEndpointRegistry implements ListenerContainerRegistry,
 			listenerContainer.start();
 		}
 	}
-
 
 	private static final class AggregatingCallback implements Runnable {
 
