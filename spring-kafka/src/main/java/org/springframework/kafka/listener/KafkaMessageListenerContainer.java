@@ -2296,12 +2296,8 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 		@Nullable
 		private RuntimeException doInvokeBatchListener(final ConsumerRecords<K, V> records, // NOSONAR
 				List<ConsumerRecord<K, V>> recordList) {
-
-			Object sample = startMicrometerSample();
 			try {
 				invokeBatchOnMessage(records, recordList);
-				batchInterceptAfter(records, null);
-				successTimer(sample, null);
 				if (this.batchFailed) {
 					this.batchFailed = false;
 					if (this.commonErrorHandler != null) {
@@ -2314,9 +2310,6 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 				}
 			}
 			catch (RuntimeException e) {
-				this.batchFailed = true;
-				failureTimer(sample, null);
-				batchInterceptAfter(records, e);
 				if (this.commonErrorHandler == null) {
 					throw e;
 				}
@@ -2470,15 +2463,26 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 					recordList = createRecordList(records);
 				}
 			}
-			if (this.wantsFullRecords) {
-				this.batchListener.onMessage(records, // NOSONAR
-						this.isAnyManualAck
-								? new ConsumerBatchAcknowledgment(records, recordList)
-								: null,
-						this.consumer);
+			Object sample = startMicrometerSample();
+			try {
+				if (this.wantsFullRecords) {
+					this.batchListener.onMessage(records, // NOSONAR
+							this.isAnyManualAck
+									? new ConsumerBatchAcknowledgment(records, recordList)
+									: null,
+							this.consumer);
+				}
+				else {
+					doInvokeBatchOnMessage(records, recordList); // NOSONAR
+				}
+				batchInterceptAfter(records, null);
+				successTimer(sample, null);
 			}
-			else {
-				doInvokeBatchOnMessage(records, recordList); // NOSONAR
+			catch (RuntimeException e) {
+				this.batchFailed = true;
+				failureTimer(sample, null);
+				batchInterceptAfter(records, e);
+				throw e;
 			}
 		}
 
