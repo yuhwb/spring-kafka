@@ -27,7 +27,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.kafka.streams.KafkaClientSupplier;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.TopologyConfig;
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.apache.kafka.streams.processor.StateRestoreListener;
 import org.apache.kafka.streams.processor.internals.DefaultKafkaClientSupplier;
@@ -55,6 +57,7 @@ import org.springframework.util.Assert;
  * @author Nurettin Yilmaz
  * @author Denis Washington
  * @author Gary Russell
+ * @author Cédric Schaller
  *
  * @since 1.1.4
  */
@@ -314,7 +317,7 @@ public class StreamsBuilderFactoryBean extends AbstractFactoryBean<StreamsBuilde
 				Assert.state(this.properties != null,
 						"streams configuration properties must not be null");
 			}
-			StreamsBuilder builder = new StreamsBuilder();
+			StreamsBuilder builder = createStreamBuilder();
 			this.infrastructureCustomizer.configureBuilder(builder);
 			return builder;
 		}
@@ -414,6 +417,17 @@ public class StreamsBuilderFactoryBean extends AbstractFactoryBean<StreamsBuilde
 		}
 		finally {
 			this.lifecycleLock.unlock();
+		}
+	}
+
+	private StreamsBuilder createStreamBuilder() {
+		if (this.properties == null) {
+			return new StreamsBuilder();
+		}
+		else {
+			StreamsConfig streamsConfig = new StreamsConfig(this.properties);
+			TopologyConfig topologyConfig = new TopologyConfig(streamsConfig);
+			return new StreamsBuilder(topologyConfig);
 		}
 	}
 
