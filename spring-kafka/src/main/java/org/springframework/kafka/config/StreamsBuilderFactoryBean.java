@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 the original author or authors.
+ * Copyright 2017-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.kafka.streams.KafkaClientSupplier;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.TopologyConfig;
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.apache.kafka.streams.processor.StateRestoreListener;
 import org.apache.kafka.streams.processor.internals.DefaultKafkaClientSupplier;
@@ -54,6 +56,7 @@ import org.springframework.util.Assert;
  * @author Nurettin Yilmaz
  * @author Denis Washington
  * @author Gary Russell
+ * @author Cédric Schaller
  *
  * @since 1.1.4
  */
@@ -303,10 +306,10 @@ public class StreamsBuilderFactoryBean extends AbstractFactoryBean<StreamsBuilde
 		if (this.autoStartup) {
 			Assert.state(this.properties != null,
 					"streams configuration properties must not be null");
-		}
-		StreamsBuilder builder = new StreamsBuilder();
-		this.infrastructureCustomizer.configureBuilder(builder);
-		return builder;
+			}
+			StreamsBuilder builder = createStreamBuilder();
+			this.infrastructureCustomizer.configureBuilder(builder);
+			return builder;
 	}
 
 	@Override
@@ -383,6 +386,17 @@ public class StreamsBuilderFactoryBean extends AbstractFactoryBean<StreamsBuilde
 	@Override
 	public synchronized boolean isRunning() {
 		return this.running;
+	}
+
+	private StreamsBuilder createStreamBuilder() {
+		if (this.properties == null) {
+			return new StreamsBuilder();
+		}
+		else {
+			StreamsConfig streamsConfig = new StreamsConfig(this.properties);
+			TopologyConfig topologyConfig = new TopologyConfig(streamsConfig);
+			return new StreamsBuilder(topologyConfig);
+		}
 	}
 
 	/**
