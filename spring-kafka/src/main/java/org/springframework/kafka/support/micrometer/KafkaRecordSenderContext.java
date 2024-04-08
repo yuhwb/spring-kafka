@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,9 @@ import io.micrometer.observation.transport.SenderContext;
  * {@link SenderContext} for {@link ProducerRecord}s.
  *
  * @author Gary Russell
+ * @author Christian Mergenthaler
+ * @author Wang Zhiyang
+ *
  * @since 3.0
  *
  */
@@ -64,7 +67,7 @@ public class KafkaRecordSenderContext extends SenderContext<ProducerRecord<?, ?>
 
 	/**
 	 * Return the producer record.
-	 * @return the record the record.
+	 * @return the record.
 	 * @since 3.0.6
 	 */
 	public ProducerRecord<?, ?> getRecord() {

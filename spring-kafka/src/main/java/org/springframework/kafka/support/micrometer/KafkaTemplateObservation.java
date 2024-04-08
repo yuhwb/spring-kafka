@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.kafka.support.micrometer;
 
+import org.springframework.lang.NonNull;
+
 import io.micrometer.common.KeyValues;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.observation.Observation.Context;
@@ -27,6 +29,9 @@ import io.micrometer.observation.docs.ObservationDocumentation;
  * {@link org.springframework.kafka.core.KafkaTemplate}.
  *
  * @author Gary Russell
+ * @author Christian Mergenthaler
+ * @author Wang Zhiyang
+ *
  * @since 3.0
  *
  */
@@ -43,11 +48,13 @@ public enum KafkaTemplateObservation implements ObservationDocumentation {
 		}
 
 		@Override
+		@NonNull
 		public String getPrefix() {
 			return "spring.kafka.template";
 		}
 
 		@Override
+		@NonNull
 		public KeyName[] getLowCardinalityKeyNames() {
 			return TemplateLowCardinalityTags.values();
 		}
@@ -56,6 +63,11 @@ public enum KafkaTemplateObservation implements ObservationDocumentation {
 
 	/**
 	 * Low cardinality tags.
+	 *
+	 * @author Christian Mergenthaler
+	 * @author Wang Zhiyang
+	 *
+	 * @since 3.2
 	 */
 	public enum TemplateLowCardinalityTags implements KeyName {
 
@@ -65,8 +77,61 @@ public enum KafkaTemplateObservation implements ObservationDocumentation {
 		BEAN_NAME {
 
 			@Override
+			@NonNull
 			public String asString() {
 				return "spring.kafka.template.name";
+			}
+
+		},
+
+		/**
+		 * Messaging system.
+		 */
+		MESSAGING_SYSTEM {
+
+			@Override
+			@NonNull
+			public String asString() {
+				return "messaging.system";
+			}
+
+		},
+
+		/**
+		 * Messaging operation.
+		 */
+		MESSAGING_OPERATION {
+
+			@Override
+			@NonNull
+			public String asString() {
+				return "messaging.operation";
+			}
+
+		},
+
+		/**
+		 * Messaging destination name.
+		 */
+		MESSAGING_DESTINATION_NAME {
+
+			@Override
+			@NonNull
+			public String asString() {
+				return "messaging.destination.name";
+			}
+
+		},
+
+		/**
+		 * Messaging destination kind.
+		 */
+		MESSAGING_DESTINATION_KIND {
+
+			@Override
+			@NonNull
+			public String asString() {
+				return "messaging.destination.kind";
 			}
 
 		}
@@ -77,6 +142,9 @@ public enum KafkaTemplateObservation implements ObservationDocumentation {
 	 * Default {@link KafkaTemplateObservationConvention} for Kafka template key values.
 	 *
 	 * @author Gary Russell
+	 * @author Christian Mergenthaler
+	 * @author Wang Zhiyang
+	 *
 	 * @since 3.0
 	 *
 	 */
@@ -90,8 +158,12 @@ public enum KafkaTemplateObservation implements ObservationDocumentation {
 
 		@Override
 		public KeyValues getLowCardinalityKeyValues(KafkaRecordSenderContext context) {
-			return KeyValues.of(KafkaTemplateObservation.TemplateLowCardinalityTags.BEAN_NAME.asString(),
-							context.getBeanName());
+			return KeyValues.of(
+					TemplateLowCardinalityTags.BEAN_NAME.withValue(context.getBeanName()),
+					TemplateLowCardinalityTags.MESSAGING_SYSTEM.withValue("kafka"),
+					TemplateLowCardinalityTags.MESSAGING_OPERATION.withValue("publish"),
+					TemplateLowCardinalityTags.MESSAGING_DESTINATION_KIND.withValue("topic"),
+					TemplateLowCardinalityTags.MESSAGING_DESTINATION_NAME.withValue(context.getDestination()));
 		}
 
 		@Override
@@ -100,6 +172,7 @@ public enum KafkaTemplateObservation implements ObservationDocumentation {
 		}
 
 		@Override
+		@NonNull
 		public String getName() {
 			return "spring.kafka.template";
 		}

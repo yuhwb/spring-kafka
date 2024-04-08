@@ -16,6 +16,10 @@
 
 package org.springframework.kafka.support.micrometer;
 
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
+import org.springframework.util.StringUtils;
+
 import io.micrometer.common.KeyValues;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.observation.Observation.Context;
@@ -26,6 +30,9 @@ import io.micrometer.observation.docs.ObservationDocumentation;
  * Spring for Apache Kafka Observation for listeners.
  *
  * @author Gary Russell
+ * @author Christian Mergenthaler
+ * @author Wang Zhiyang
+ *
  * @since 3.0
  *
  */
@@ -42,13 +49,21 @@ public enum KafkaListenerObservation implements ObservationDocumentation {
 		}
 
 		@Override
+		@NonNull
 		public String getPrefix() {
 			return "spring.kafka.listener";
 		}
 
 		@Override
+		@NonNull
 		public KeyName[] getLowCardinalityKeyNames() {
 			return ListenerLowCardinalityTags.values();
+		}
+
+		@Override
+		@NonNull
+		public KeyName[] getHighCardinalityKeyNames() {
+			return ListenerHighCardinalityTags.values();
 		}
 
 	};
@@ -64,20 +79,147 @@ public enum KafkaListenerObservation implements ObservationDocumentation {
 		LISTENER_ID {
 
 			@Override
+			@NonNull
 			public String asString() {
 				return "spring.kafka.listener.id";
 			}
 
-		}
+		},
+
+		/**
+		 * Messaging system.
+		 * @since 3.2
+		 */
+		MESSAGING_SYSTEM {
+
+			@Override
+			@NonNull
+			public String asString() {
+				return "messaging.system";
+			}
+
+		},
+
+		/**
+		 * Messaging operation.
+		 * @since 3.2
+		 */
+		MESSAGING_OPERATION {
+
+			@Override
+			@NonNull
+			public String asString() {
+				return "messaging.operation";
+			}
+
+		},
+
+		/**
+		 * Messaging source name.
+		 * @since 3.2
+		 */
+		MESSAGING_SOURCE_NAME {
+
+			@Override
+			@NonNull
+			public String asString() {
+				return "messaging.source.name";
+			}
+
+		},
+
+		/**
+		 * Messaging source kind.
+		 * @since 3.2
+		 */
+		MESSAGING_SOURCE_KIND {
+
+			@Override
+			@NonNull
+			public String asString() {
+				return "messaging.source.kind";
+			}
+
+		},
+
+		/**
+		 * Messaging the consumer group.
+		 * @since 3.2
+		 */
+		MESSAGING_CONSUMER_GROUP {
+
+			@Override
+			@NonNull
+			public String asString() {
+				return "messaging.kafka.consumer.group";
+			}
+
+		},
+
+	}
+
+	/**
+	 * High cardinality tags.
+	 * @since 3.2
+	 */
+	public enum ListenerHighCardinalityTags implements KeyName {
+
+		/**
+		 * Messaging client id.
+		 */
+		MESSAGING_CLIENT_ID {
+
+			@Override
+			@NonNull
+			public String asString() {
+				return "messaging.kafka.client_id";
+			}
+
+		},
+
+		/**
+		 * Messaging consumer id (consumer group and client id).
+		 */
+		MESSAGING_CONSUMER_ID {
+
+			@Override
+			@NonNull
+			public String asString() {
+				return "messaging.consumer.id";
+			}
+
+		},
+
+		/**
+		 * Messaging partition.
+		 */
+		MESSAGING_PARTITION {
+
+			@Override
+			@NonNull
+			public String asString() {
+				return "messaging.kafka.source.partition";
+			}
+
+		},
+
+		/**
+		 * Messaging message offset.
+		 */
+		MESSAGING_OFFSET {
+
+			@Override
+			@NonNull
+			public String asString() {
+				return "messaging.kafka.message.offset";
+			}
+
+		},
 
 	}
 
 	/**
 	 * Default {@link KafkaListenerObservationConvention} for Kafka listener key values.
-	 *
-	 * @author Gary Russell
-	 * @since 3.0
-	 *
 	 */
 	public static class DefaultKafkaListenerObservationConvention implements KafkaListenerObservationConvention {
 
@@ -89,8 +231,33 @@ public enum KafkaListenerObservation implements ObservationDocumentation {
 
 		@Override
 		public KeyValues getLowCardinalityKeyValues(KafkaRecordReceiverContext context) {
-			return KeyValues.of(KafkaListenerObservation.ListenerLowCardinalityTags.LISTENER_ID.asString(),
-							context.getListenerId());
+
+			return KeyValues.of(
+					ListenerLowCardinalityTags.LISTENER_ID.withValue(context.getListenerId()),
+					ListenerLowCardinalityTags.MESSAGING_SYSTEM.withValue("kafka"),
+					ListenerLowCardinalityTags.MESSAGING_OPERATION.withValue("receive"),
+					ListenerLowCardinalityTags.MESSAGING_SOURCE_NAME.withValue(context.getSource()),
+					ListenerLowCardinalityTags.MESSAGING_SOURCE_KIND.withValue("topic"),
+					ListenerLowCardinalityTags.MESSAGING_CONSUMER_GROUP.withValue(context.getGroupId())
+			);
+		}
+
+		@Override
+		@NonNull
+		public KeyValues getHighCardinalityKeyValues(KafkaRecordReceiverContext context) {
+			String clientId = context.getClientId();
+			KeyValues keyValues = KeyValues.of(
+					ListenerHighCardinalityTags.MESSAGING_PARTITION.withValue(context.getPartition()),
+					ListenerHighCardinalityTags.MESSAGING_OFFSET.withValue(context.getOffset()),
+					ListenerHighCardinalityTags.MESSAGING_CONSUMER_ID.withValue(getConsumerId(context, clientId))
+			);
+
+			if (StringUtils.hasText(clientId)) {
+				keyValues = keyValues
+						.and(ListenerHighCardinalityTags.MESSAGING_CLIENT_ID.withValue(clientId));
+			}
+
+			return keyValues;
 		}
 
 		@Override
@@ -98,9 +265,11 @@ public enum KafkaListenerObservation implements ObservationDocumentation {
 			return context.getSource() + " receive";
 		}
 
-		@Override
-		public String getName() {
-			return "spring.kafka.listener";
+		private static String getConsumerId(KafkaRecordReceiverContext context, @Nullable String clientId) {
+			if (StringUtils.hasText(clientId)) {
+				return context.getGroupId() + " - " + clientId;
+			}
+			return context.getGroupId();
 		}
 
 	}

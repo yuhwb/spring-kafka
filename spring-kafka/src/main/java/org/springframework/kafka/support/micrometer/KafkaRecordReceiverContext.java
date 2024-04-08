@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,17 @@ import java.util.function.Supplier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
 
+import org.springframework.lang.Nullable;
+
 import io.micrometer.observation.transport.ReceiverContext;
 
 /**
  * {@link ReceiverContext} for {@link ConsumerRecord}s.
  *
  * @author Gary Russell
+ * @author Christian Mergenthaler
+ * @author Wang Zhiyang
+ *
  * @since 3.0
  *
  */
@@ -35,9 +40,33 @@ public class KafkaRecordReceiverContext extends ReceiverContext<ConsumerRecord<?
 
 	private final String listenerId;
 
+	private final String clientId;
+
+	private final String groupId;
+
 	private final ConsumerRecord<?, ?> record;
 
+	/**
+	 * Construct a kafka record receiver context.
+	 * @param record 		the consumer record.
+	 * @param listenerId	the container listener id.
+	 * @param clusterId		the kafka cluster id.
+	 */
 	public KafkaRecordReceiverContext(ConsumerRecord<?, ?> record, String listenerId, Supplier<String> clusterId) {
+		this(record, listenerId, null, null, clusterId);
+	}
+
+	/**
+	 * Construct a kafka record receiver context.
+	 * @param record 		the consumer record.
+	 * @param listenerId	the container listener id.
+	 * @param clientId		the kafka client id.
+	 * @param groupId		the consumer group id.
+	 * @param clusterId		the kafka cluster id.
+	 * @since 3.2
+	 */
+	public KafkaRecordReceiverContext(ConsumerRecord<?, ?> record, String listenerId, String clientId, String groupId,
+			Supplier<String> clusterId) {
 		super((carrier, key) -> {
 			Header header = carrier.headers().lastHeader(key);
 			if (header == null || header.value() == null) {
@@ -48,6 +77,8 @@ public class KafkaRecordReceiverContext extends ReceiverContext<ConsumerRecord<?
 		setCarrier(record);
 		this.record = record;
 		this.listenerId = listenerId;
+		this.clientId = clientId;
+		this.groupId = groupId;
 		String cluster = clusterId.get();
 		setRemoteServiceName("Apache Kafka" + (cluster != null ? ": " + cluster : ""));
 	}
@@ -61,6 +92,25 @@ public class KafkaRecordReceiverContext extends ReceiverContext<ConsumerRecord<?
 	}
 
 	/**
+	 * Return the consumer group id.
+	 * @return the consumer group id.
+	 * @since 3.2
+	 */
+	public String getGroupId() {
+		return this.groupId;
+	}
+
+	/**
+	 * Return the client id.
+	 * @return the client id.
+	 * @since 3.2
+	 */
+	@Nullable
+	public String getClientId() {
+		return this.clientId;
+	}
+
+	/**
 	 * Return the source topic.
 	 * @return the source.
 	 */
@@ -70,11 +120,29 @@ public class KafkaRecordReceiverContext extends ReceiverContext<ConsumerRecord<?
 
 	/**
 	 * Return the consumer record.
-	 * @return the record the record.
+	 * @return the record.
 	 * @since 3.0.6
 	 */
 	public ConsumerRecord<?, ?> getRecord() {
 		return this.record;
+	}
+
+	/**
+	 * Return the partition.
+	 * @return the partition.
+	 * @since 3.2
+	 */
+	public String getPartition() {
+		return Integer.toString(this.record.partition());
+	}
+
+	/**
+	 * Return the offset.
+	 * @return the offset.
+	 * @since 3.2
+	 */
+	public String getOffset() {
+		return Long.toString(this.record.offset());
 	}
 
 }
