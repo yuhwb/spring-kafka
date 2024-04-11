@@ -161,6 +161,8 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Daniel Gentes
  * @author Soby Chacko
  * @author Raphael Rösch
+ * @author Christian Mergenthaler
+ * @author Mikael Carlstedt
  */
 public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 		extends AbstractMessageListenerContainer<K, V> implements ConsumerPauseResumeEventPublisher {
@@ -3317,6 +3319,10 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 				this.consumer.commitSync(commits, this.syncCommitTimeout);
 				if (this.fixTxOffsets) {
 					this.lastCommits.putAll(commits);
+				}
+				if (!this.commitsDuringRebalance.isEmpty()) {
+					// Remove failed commits during last rebalance that are superseded by these commits
+					this.commitsDuringRebalance.keySet().removeAll(commits.keySet());
 				}
 			}
 			catch (RetriableCommitFailedException e) {
