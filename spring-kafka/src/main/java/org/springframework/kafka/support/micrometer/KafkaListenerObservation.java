@@ -50,12 +50,6 @@ public enum KafkaListenerObservation implements ObservationDocumentation {
 
 		@Override
 		@NonNull
-		public String getPrefix() {
-			return "spring.kafka.listener";
-		}
-
-		@Override
-		@NonNull
 		public KeyName[] getLowCardinalityKeyNames() {
 			return ListenerLowCardinalityTags.values();
 		}

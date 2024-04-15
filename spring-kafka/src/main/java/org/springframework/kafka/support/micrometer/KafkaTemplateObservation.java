@@ -49,12 +49,6 @@ public enum KafkaTemplateObservation implements ObservationDocumentation {
 
 		@Override
 		@NonNull
-		public String getPrefix() {
-			return "spring.kafka.template";
-		}
-
-		@Override
-		@NonNull
 		public KeyName[] getLowCardinalityKeyNames() {
 			return TemplateLowCardinalityTags.values();
 		}
