@@ -25,11 +25,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
+import org.apache.kafka.streams.state.BuiltInDslStoreSuppliers;
+import org.apache.kafka.streams.state.KeyValueStore;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -45,6 +48,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /**
  * @author Cédric Schaller
+ * @author Soby Chacko
  */
 @SpringJUnitConfig
 @DirtiesContext
@@ -80,18 +84,16 @@ public class StreamsBuilderFactoryBeanInMemoryStateStoreTests {
 			props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.StringSerde.class);
 			props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.StringSerde.class);
 			props.put(StreamsConfig.STATE_DIR_CONFIG, stateStoreDir.toString());
-
-			// Property introduced with KIP-591 (Kafka 3.2) and deprecated (but still supported) with Kafka 3.7
-			props.put(StreamsConfig.DEFAULT_DSL_STORE_CONFIG, "in_memory");
 			return new KafkaStreamsConfiguration(props);
 		}
 
 		@Bean
 		public KTable<?, ?> table(StreamsBuilder builder) {
 			KStream<Object, Object> stream = builder.stream("source-topic");
-			return stream.groupByKey()
-					.count(Materialized.as("store"));
-
+			return stream
+					.groupByKey()
+					.count(Materialized.<Object, Long, KeyValueStore<Bytes, byte[]>>as("store")
+							.withStoreType(BuiltInDslStoreSuppliers.IN_MEMORY));
 		}
 	}
 }
