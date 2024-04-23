@@ -62,6 +62,7 @@ import org.springframework.util.ObjectUtils;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Wang Zhiyang
+ * @author Sanghyeok An
  *
  * @see MethodKafkaListenerEndpoint
  */
@@ -333,7 +334,7 @@ public abstract class AbstractKafkaListenerEndpoint<K, V>
 	}
 
 	/**
-	 * Set to true if the {@link #setRecordFilterStrategy(RecordFilterStrategy)} is in use.
+	 * Set to true if the {@link #setRecordFilterStrategy(RecordFilterStrategy)} should ack discarded messages.
 	 * @param ackDiscarded the ackDiscarded.
 	 */
 	public void setAckDiscarded(boolean ackDiscarded) {
