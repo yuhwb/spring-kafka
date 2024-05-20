@@ -761,6 +761,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, ApplicationCo
 		}
 	}
 
+	@SuppressWarnings("try")
 	private CompletableFuture<SendResult<K, V>> observeSend(final ProducerRecord<K, V> producerRecord) {
 		Observation observation = KafkaTemplateObservation.TEMPLATE_OBSERVATION.observation(
 				this.observationConvention, DefaultKafkaTemplateObservationConvention.INSTANCE,
