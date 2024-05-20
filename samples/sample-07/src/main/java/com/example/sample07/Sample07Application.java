@@ -26,7 +26,7 @@ import org.springframework.kafka.annotation.EnableKafka;
  *
  * @author Sanghyeok An.
  *
- * @since 3.3
+ * @since 3.2.0
  */
 
 @EnableKafka

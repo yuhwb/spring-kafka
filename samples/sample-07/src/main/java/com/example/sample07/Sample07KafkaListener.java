@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
  *
  * @author Sanghyeok An.
  *
- * @since 3.3
+ * @since 3.2.0
  */
 
 @Component
