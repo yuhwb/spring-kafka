@@ -29,7 +29,7 @@ updates:
           - org.springframework.boot*
 
   - package-ecosystem: gradle
-    target-branch: 3.1.x
+    target-branch: 3.2.x
     directory: /
     schedule:
       interval: weekly
@@ -54,10 +54,11 @@ updates:
           - io.micrometer:micrometer-docs-generator
           - org.hibernate.validator:hibernate-validator
           - org.awaitility:awaitility
+          - com.github.spotbugs
           - org.springframework.boot*
 
   - package-ecosystem: gradle
-    target-branch: 3.0.x
+    target-branch: 3.1.x
     directory: /
     schedule:
       interval: weekly
@@ -97,7 +98,7 @@ updates:
           - '*'
 
   - package-ecosystem: github-actions
-    target-branch: 3.1.x
+    target-branch: 3.2.x
     directory: /
     schedule:
       interval: weekly
@@ -110,7 +111,7 @@ updates:
           - '*'
 
   - package-ecosystem: github-actions
-    target-branch: 3.0.x
+    target-branch: 3.1.x
     directory: /
     schedule:
       interval: weekly
