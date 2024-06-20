@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,13 @@ import static org.mockito.Mockito.mock;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.listener.MessageListenerContainer;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 2.8.9
  *
  */
@@ -45,6 +48,21 @@ public class KafkaListenerEndpointRegistryTests {
 		assertThat(unregistered).isSameAs(container);
 		registry.registerListenerContainer(endpoint, factory);
 		assertThat(unregistered).isSameAs(container);
+	}
+
+	@Test
+	void verifyUnregisteredListenerContainer() {
+		KafkaListenerEndpointRegistry registry = new KafkaListenerEndpointRegistry();
+		GenericApplicationContext applicationContext = new GenericApplicationContext();
+		ConcurrentMessageListenerContainer<?, ?> listenerContainerMock = mock(ConcurrentMessageListenerContainer.class);
+		given(listenerContainerMock.getListenerId()).willReturn("testListenerContainer");
+		applicationContext.registerBean(ConcurrentMessageListenerContainer.class, () -> listenerContainerMock);
+		applicationContext.refresh();
+		registry.setApplicationContext(applicationContext);
+		// Lazy-load from application context
+		assertThat(registry.getUnregisteredListenerContainer("testListenerContainer")).isNotNull();
+		// From internal map
+		assertThat(registry.getUnregisteredListenerContainer("testListenerContainer")).isNotNull();
 	}
 
 }
