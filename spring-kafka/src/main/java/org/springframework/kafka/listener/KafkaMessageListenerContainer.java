@@ -165,6 +165,7 @@ import io.micrometer.observation.ObservationRegistry;
  * @author Raphael Rösch
  * @author Christian Mergenthaler
  * @author Mikael Carlstedt
+ * @author Borahm Lee
  */
 public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 		extends AbstractMessageListenerContainer<K, V> implements ConsumerPauseResumeEventPublisher {
@@ -681,7 +682,7 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 
 		private final TransactionTemplate transactionTemplate;
 
-		private final String consumerGroupId = getGroupId();
+		private final String consumerGroupId = KafkaMessageListenerContainer.this.getGroupId();
 
 		private final TaskScheduler taskScheduler;
 
@@ -1362,8 +1363,8 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 			}
 			publishConsumerStartingEvent();
 			this.consumerThread = Thread.currentThread();
-			setupSeeks();
 			KafkaUtils.setConsumerGroupId(this.consumerGroupId);
+			setupSeeks();
 			this.count = 0;
 			this.last = System.currentTimeMillis();
 			initAssignedPartitions();
@@ -1906,7 +1907,7 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 				this.consumerSeekAwareListener.onPartitionsRevoked(partitions);
 				this.consumerSeekAwareListener.unregisterSeekCallback();
 			}
-			this.logger.info(() -> getGroupId() + ": Consumer stopped");
+			this.logger.info(() -> this.consumerGroupId + ": Consumer stopped");
 			publishConsumerStoppedEvent(throwable);
 		}
 
@@ -2693,7 +2694,7 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 			Observation observation = KafkaListenerObservation.LISTENER_OBSERVATION.observation(
 					this.containerProperties.getObservationConvention(),
 					DefaultKafkaListenerObservationConvention.INSTANCE,
-					() -> new KafkaRecordReceiverContext(cRecord, getListenerId(), getClientId(), getGroupId(),
+					() -> new KafkaRecordReceiverContext(cRecord, getListenerId(), getClientId(), this.consumerGroupId,
 							this::clusterId),
 					this.observationRegistry);
 			return observation.observe(() -> {
@@ -3325,6 +3326,11 @@ public class KafkaMessageListenerContainer<K, V> // NOSONAR line count
 		@Override
 		public void seekToTimestamp(Collection<TopicPartition> topicParts, long timestamp) {
 			topicParts.forEach(tp -> seekToTimestamp(tp.topic(), tp.partition(), timestamp));
+		}
+
+		@Override
+		public String getGroupId() {
+			return this.consumerGroupId;
 		}
 
 		@Override
