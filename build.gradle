@@ -2,6 +2,8 @@ buildscript {
 	ext.kotlinVersion = '1.9.24'
 	ext.isCI = System.getenv('GITHUB_ACTION')
 	repositories {
+		maven { url 'https://maven.aliyun.com/repository/public/' }
+		maven { url 'https://maven.aliyun.com/repository/spring/'}
 		mavenCentral()
 		gradlePluginPortal()
 		maven { url 'https://repo.spring.io/plugins-release-local' }
@@ -91,6 +93,8 @@ allprojects {
 	apply plugin: 'io.spring.dependency-management'
 
 	repositories {
+		maven { url 'https://maven.aliyun.com/repository/public/' }
+		maven { url 'https://maven.aliyun.com/repository/spring/'}
 		mavenCentral()
 		maven { url 'https://repo.spring.io/milestone' }
 		if (version.endsWith('SNAPSHOT')) {
